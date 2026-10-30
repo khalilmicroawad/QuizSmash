@@ -1,0 +1,6 @@
+{
+  "name": "Quiz Smash",
+  "description": "High-stakes MCQ Quiz arena with immediate buzzer feedback, 3 challenge timer modes, randomized questions and answers, and custom .txt bank uploads.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

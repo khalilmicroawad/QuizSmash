@@ -1,0 +1,22 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "Quiz_Smash",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "MCQ",
+  "start_url": "https://quizpulse-high-stakes-mcq-master.ai.studio/",
+  "theme_color": "#745757",
+  "id": "Quiz_Smash",
+  "description": "MCQTester",
+  "lang": "en",
+  "display_override": [
+    "fullscreen",
+    "window-controls-overlay"
+  ],
+  "categories": [
+    "books",
+    "books &amp; reference"
+  ]
+}
