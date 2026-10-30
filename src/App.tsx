@@ -66,7 +66,7 @@ function QuizSmashApp() {
   }, [user, isLoading]);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#07131e] text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-orange-500 selection:text-white transition-colors duration-200">
+    <div className="min-h-screen bg-white text-slate-900 flex flex-col font-sans selection:bg-orange-500 selection:text-white transition-colors duration-200">
       {/* Universal Top Bar with Quiz Smash & Theme & Language Switcher */}
       <Header
         currentTab={currentTab}
@@ -119,8 +119,8 @@ function QuizSmashApp() {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-200 dark:border-slate-900 bg-white dark:bg-slate-950 py-6 text-center text-xs text-slate-500 dark:text-slate-400 transition-colors">
+      {/* Footer with clean dividing line */}
+      <footer className="border-t-2 border-slate-200 bg-white py-6 text-center text-xs text-slate-500 transition-colors">
         <div className="mx-auto max-w-7xl px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="font-extrabold text-slate-900 dark:text-slate-300">{t('brandName')}</span>

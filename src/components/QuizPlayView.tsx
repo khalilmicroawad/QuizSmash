@@ -17,6 +17,8 @@ import {
   GraduationCap,
   Timer,
   Check,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Question, QuizSettings, QuizAttempt, QuestionResult, UserProfile } from '../types/quiz';
@@ -62,6 +64,7 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
   });
 
   const [gameState, setGameState] = useState<'lobby' | 'playing' | 'summary'>('lobby');
+  const [isSoundOn, setIsSoundOn] = useState<boolean>(soundEnabled);
 
   // Active quiz state
   const [quizQuestions, setQuizQuestions] = useState<Question[]>([]);
@@ -427,97 +430,100 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
   // LOBBY SCREEN
   if (gameState === 'lobby') {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Banner */}
-        <div className="mb-8 rounded-2xl border border-slate-200 dark:border-slate-800 bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 p-6 sm:p-8 shadow-sm">
+      <div className="mx-auto max-w-4xl px-4 py-6">
+        {/* SECTION 1: ARENA BANNER */}
+        <div className="rounded-2xl border-2 border-slate-200 bg-white p-6 sm:p-7 shadow-xs">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
             <div>
-              <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-sky-600 dark:text-sky-400 mb-2">
+              <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-sky-600 mb-2">
                 <span>{t('arenaBadge')}</span>
                 <span>·</span>
                 <span>{t('randomizedBadge')}</span>
                 <span>·</span>
                 <span>{playMode === 'practice' ? t('modePracticeTitle') : t('modeExamTitle')}</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                 {t('arenaTitle')}
               </h1>
-              <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
+              <p className="mt-1.5 text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
                 {t('arenaDescription')}
               </p>
             </div>
 
-            <div className="flex items-center gap-4 bg-white dark:bg-slate-800/80 p-4 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-xs">
+            <div className="flex items-center gap-3.5 bg-slate-50 p-4 rounded-2xl border border-slate-200 shadow-xs">
               <div className="text-right rtl:text-left">
                 <div className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold">{t('highScore')}</div>
                 <div className="font-mono text-xl font-extrabold text-orange-500">
                   {activeProfile.highScore.toLocaleString()}
                 </div>
               </div>
-              <Zap className="h-8 w-8 text-orange-500 shrink-0" />
+              <Zap className="h-7 w-7 text-orange-500 shrink-0" />
             </div>
           </div>
         </div>
 
-        {/* MODE SELECTOR (PRACTICE VS EXAM) */}
-        <div className="mb-8">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3 flex items-center gap-2">
+        {/* LINE SEPARATING HEADER SECTION FROM MODE SELECTOR SECTION */}
+        <div className="w-full border-b-2 border-slate-200 my-6" />
+
+        {/* SECTION 2: MODE SELECTOR (PRACTICE VS EXAM) */}
+        <div>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
             <span>{t('modeSelectionTitle')}</span>
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* PRACTICE MODE CARD (Ocean Blue) */}
+            {/* PRACTICE MODE CARD */}
             <button
               type="button"
               onClick={() => setPlayMode('practice')}
-              className={`p-5 rounded-2xl border text-left rtl:text-right transition-all flex flex-col justify-between cursor-pointer relative overflow-hidden ${
+              className={`p-5 rounded-2xl border-2 text-left rtl:text-right transition-all flex flex-col justify-between cursor-pointer relative overflow-hidden bg-white ${
                 playMode === 'practice'
-                  ? 'border-sky-500 bg-sky-50/80 dark:bg-sky-950/40 text-slate-900 dark:text-white ring-2 ring-sky-500/30 shadow-md'
-                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:border-sky-300 dark:hover:border-sky-800 text-slate-700 dark:text-slate-300'
+                  ? 'border-orange-500 ring-2 ring-orange-500/20 shadow-md'
+                  : 'border-slate-200 hover:border-orange-300 text-slate-700'
               }`}
             >
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold">
+                    <div className="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center font-bold border border-sky-200">
                       <GraduationCap className="w-5 h-5" />
                     </div>
-                    <span className="font-extrabold text-base">{t('modePracticeTitle')}</span>
+                    <span className="font-extrabold text-base text-slate-900">{t('modePracticeTitle')}</span>
                   </div>
                   {playMode === 'practice' && (
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-sky-600 text-white text-xs">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 text-white text-xs">
                       <Check className="h-3 w-3 stroke-[3]" />
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-3">
+                <p className="text-xs text-slate-600 leading-relaxed mb-3">
                   {t('modePracticeSubtitle')}
                 </p>
               </div>
 
-              <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-sky-700 dark:text-sky-400">
+              <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-sky-700">
                 <BookOpen className="w-3.5 h-3.5" />
                 <span>{t('modePracticeBadge')}</span>
               </div>
             </button>
 
-            {/* EXAM MODE CARD (Chromic Orange) */}
+            {/* EXAM MODE CARD */}
             <button
               type="button"
               onClick={() => setPlayMode('exam')}
-              className={`p-5 rounded-2xl border text-left rtl:text-right transition-all flex flex-col justify-between cursor-pointer relative overflow-hidden ${
+              className={`p-5 rounded-2xl border-2 text-left rtl:text-right transition-all flex flex-col justify-between cursor-pointer relative overflow-hidden bg-white ${
                 playMode === 'exam'
-                  ? 'border-orange-500 bg-orange-50/80 dark:bg-orange-950/40 text-slate-900 dark:text-white ring-2 ring-orange-500/30 shadow-md'
-                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:border-orange-300 dark:hover:border-orange-800 text-slate-700 dark:text-slate-300'
+                  ? 'border-orange-500 ring-2 ring-orange-500/20 shadow-md'
+                  : 'border-slate-200 hover:border-orange-300 text-slate-700'
               }`}
             >
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold">
+                    <div className="w-9 h-9 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center font-bold border border-orange-200">
                       <Timer className="w-5 h-5" />
                     </div>
-                    <span className="font-extrabold text-base">{t('modeExamTitle')}</span>
+                    <span className="font-extrabold text-base text-slate-900">{t('modeExamTitle')}</span>
                   </div>
                   {playMode === 'exam' && (
                     <span className="flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 text-white text-xs">
@@ -525,12 +531,12 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-3">
+                <p className="text-xs text-slate-600 leading-relaxed mb-3">
                   {t('modeExamSubtitle')}
                 </p>
               </div>
 
-              <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-orange-700 dark:text-orange-400">
+              <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-orange-700">
                 <Clock className="w-3.5 h-3.5" />
                 <span>{t('modeExamBadge')}</span>
               </div>
@@ -538,9 +544,12 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
           </div>
         </div>
 
-        {/* QUESTIONS STATUS & START BUTTON */}
+        {/* LINE SEPARATING MODE SELECTOR SECTION FROM START/ACTION SECTION */}
+        <div className="w-full border-b-2 border-slate-200 my-6" />
+
+        {/* SECTION 3: START ACTION */}
         {questions.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 p-8 sm:p-12 text-center bg-white/50 dark:bg-slate-900/40">
+          <div className="rounded-2xl border-2 border-dashed border-slate-300 p-8 text-center bg-white">
             <input
               type="file"
               ref={fileInputRef}
@@ -549,20 +558,20 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
               className="hidden"
               id="inline-txt-file"
             />
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50 dark:bg-orange-950/60 text-orange-500 dark:text-orange-400 mb-4">
-              <Upload className="h-7 w-7" />
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-orange-50 text-orange-500 mb-3">
+              <Upload className="h-6 w-6" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+            <h3 className="text-base font-bold text-slate-900 mb-1">
               {t('emptyBankTitle')}
             </h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6 leading-relaxed">
+            <p className="text-xs text-slate-500 max-w-md mx-auto mb-5 leading-relaxed">
               {t('emptyBankDesc')}
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-3">
               <label
                 htmlFor="inline-txt-file"
-                className="cursor-pointer px-6 py-3 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-md shadow-orange-500/25 flex items-center gap-2"
+                className="cursor-pointer px-6 py-3 rounded-2xl font-extrabold text-xs btn-glossy-orange flex items-center gap-2"
               >
                 <Upload className="h-4 w-4" />
                 <span>{t('uploadBankBtn')}</span>
@@ -577,74 +586,46 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
                     onQuestionsUploaded(sample.questions);
                   }
                 }}
-                className="px-5 py-3 rounded-xl font-semibold text-xs text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                className="px-5 py-3 rounded-2xl font-bold text-xs text-slate-700 border-2 border-slate-200 bg-white hover:border-orange-400 transition-colors cursor-pointer"
               >
                 {t('loadSampleBtn')}
               </button>
             </div>
 
             {inlineUploadError && (
-              <p className="mt-4 text-xs text-rose-500 font-medium">{inlineUploadError}</p>
+              <p className="mt-3 text-xs text-rose-500 font-medium">{inlineUploadError}</p>
             )}
           </div>
         ) : (
-          <div className="space-y-6">
-            {/* BIG PLAY BUTTON BANNER */}
-            <div
-              className={`rounded-2xl border-2 p-6 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-5 transition-all ${
-                playMode === 'practice'
-                  ? 'border-sky-500/80 bg-gradient-to-r from-sky-50 via-white to-blue-50 dark:from-sky-950/70 dark:via-slate-900 dark:to-blue-950/60'
-                  : 'border-orange-500/80 bg-gradient-to-r from-orange-50 via-white to-amber-50 dark:from-orange-950/70 dark:via-slate-900 dark:to-amber-950/60'
-              }`}
-            >
+          <div className="space-y-4">
+            <div className="rounded-2xl border-2 border-slate-200 bg-white p-6 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-5">
               <div className="flex items-center gap-4 text-center sm:text-left rtl:sm:text-right">
-                <div
-                  className={`flex h-14 w-14 items-center justify-center rounded-2xl border shrink-0 ${
-                    playMode === 'practice'
-                      ? 'bg-sky-100 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 border-sky-300 dark:border-sky-500/40'
-                      : 'bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-300 dark:border-orange-500/40'
-                  }`}
-                >
-                  {playMode === 'practice' ? (
-                    <GraduationCap className="h-7 w-7" />
-                  ) : (
-                    <Play className="h-7 w-7 fill-orange-500 dark:fill-orange-400 text-orange-500" />
-                  )}
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border-2 border-orange-200 bg-orange-50 text-orange-600 shrink-0">
+                  <Play className="h-6 w-6 fill-orange-500 text-orange-500" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2 justify-center sm:justify-start rtl:sm:justify-start">
-                    <span className="text-xs uppercase tracking-wider font-extrabold text-sky-600 dark:text-sky-400">
+                    <span className="text-xs uppercase tracking-wider font-extrabold text-sky-600">
                       {t('bankReady')}
                     </span>
-                    <span className={`px-2 py-0.5 rounded text-[11px] font-black border ${activeDifficulty.borderColor} ${activeDifficulty.badgeBg}`}>
+                    <span className="px-2 py-0.5 rounded-lg text-[11px] font-black border border-slate-200 bg-slate-50">
                       {playMode === 'practice' ? t('modePracticeTitle') : `30s · ${activeDifficulty.tier}`}
                     </span>
-                    <span className="text-xs text-orange-600 dark:text-orange-400 flex items-center gap-1 font-semibold">
-                      <Shuffle className="h-3 w-3" />
-                      <span>{t('randomizedBadge')}</span>
-                    </span>
                   </div>
-                  <h2 className="text-xl font-extrabold text-slate-900 dark:text-white mt-1">
+                  <h2 className="text-lg font-extrabold text-slate-900 mt-0.5">
                     {t('questionsCountLoaded', { count: questions.length })}
                   </h2>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                    {playMode === 'practice'
-                      ? t('modePracticeSubtitle')
-                      : t('playingWithTimerDesc', {
-                          seconds: FIXED_TIMER_SECONDS,
-                          base: activeDifficulty.basePoints,
-                        })}
-                  </p>
                 </div>
               </div>
 
+              {/* Orange Glossy Rounded Start Button */}
               <div className="w-full sm:w-auto">
                 <button
                   type="button"
                   onClick={handleStartQuiz}
-                  className="w-full sm:w-auto px-8 py-4 rounded-xl font-black text-sm text-white active:scale-95 transition-all shadow-xl bg-gradient-to-r from-orange-500 via-amber-500 to-sky-600 hover:from-orange-600 hover:to-sky-700 shadow-orange-500/25 flex items-center justify-center gap-2.5 shrink-0 cursor-pointer"
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-2xl text-sm btn-glossy-orange flex items-center justify-center gap-2.5 shrink-0 cursor-pointer"
                 >
-                  <Play className="h-5 w-5 fill-white" />
+                  <Play className="h-4 w-4 fill-white" />
                   <span>
                     {playMode === 'practice'
                       ? isRTL
@@ -674,128 +655,166 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
 
     return (
       <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
-        {/* TOP STATUS BAR: Progress, Mode Badge, Live Streak & Score */}
-        <div className="mb-4 flex items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-500">
-              {t('questionNumberLabel', { current: currentIndex + 1, total: quizQuestions.length })}
-            </span>
-            <span className="text-slate-300 dark:text-slate-700">·</span>
-            <span className={`text-[11px] font-extrabold px-2 py-0.5 rounded-full border ${activeDifficulty.borderColor} ${activeDifficulty.badgeBg}`}>
-              {playMode === 'practice' ? '🎓 Practice (Untimed)' : '⏱️ 30s Exam'}
-            </span>
-          </div>
+        {/* SECTION 1: CONTROL BUTTONS & STATUS BAR */}
+        <div className="rounded-2xl border-2 border-slate-200 bg-white p-5 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            {/* Control buttons & question counter */}
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setGameState('lobby')}
+                className="px-3.5 py-1.5 rounded-2xl text-xs font-bold btn-glossy-orange-outline flex items-center gap-1.5 cursor-pointer"
+                title={t('backToLobbyBtn')}
+              >
+                {isRTL ? <ArrowRight className="h-3.5 w-3.5" /> : <ArrowLeft className="h-3.5 w-3.5" />}
+                <span>{isRTL ? 'خروج' : 'Exit'}</span>
+              </button>
 
-          <div className="flex items-center gap-3">
-            {/* Live Streak Pill */}
-            <div
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition-all ${
-                currentStreak >= 1
-                  ? 'border-amber-300 dark:border-amber-700/80 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400'
-                  : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400'
-              }`}
-            >
-              <Flame
-                className={`h-4 w-4 transition-transform duration-300 ${
-                  currentStreak >= 3
-                    ? 'fill-amber-500 text-amber-500 scale-125 animate-bounce'
-                    : currentStreak >= 1
-                    ? 'fill-amber-500 text-amber-500 scale-110'
-                    : 'text-slate-400 dark:text-slate-500'
+              <button
+                type="button"
+                onClick={() => setIsSoundOn(!isSoundOn)}
+                className="p-1.5 rounded-2xl text-xs font-bold btn-glossy-orange-outline flex items-center justify-center cursor-pointer"
+                title={isSoundOn ? 'Mute' : 'Unmute'}
+              >
+                {isSoundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+              </button>
+
+              <span className="text-xs font-extrabold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
+                {t('questionNumberLabel', { current: currentIndex + 1, total: quizQuestions.length })}
+              </span>
+
+              <span className={`text-[11px] font-extrabold px-2.5 py-1 rounded-xl border ${activeDifficulty.borderColor} ${activeDifficulty.badgeBg}`}>
+                {playMode === 'practice' ? '🎓 Practice' : '⏱️ 30s Exam'}
+              </span>
+            </div>
+
+            {/* Streak & Score controls */}
+            <div className="flex items-center gap-3">
+              {/* Live Streak Pill */}
+              <div
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-2xl text-xs font-bold border transition-all ${
+                  currentStreak >= 1
+                    ? 'border-amber-300 bg-amber-50 text-amber-700'
+                    : 'border-slate-200 bg-slate-50 text-slate-500'
                 }`}
-              />
-              <span className="font-mono">{t('liveStreakLabel', { streak: currentStreak })}</span>
-
-              {currentStreak > 1 && (
-                <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500 text-white font-extrabold shadow-xs">
-                  {t('liveStreakBonus', { pct: (currentStreak - 1) * 15 })}
-                </span>
-              )}
-            </div>
-
-            {/* Score */}
-            <div className="text-right rtl:text-left">
-              <div className="font-mono text-base font-extrabold text-slate-900 dark:text-white">
-                {currentScore.toLocaleString()}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* TIMER BAR: Shown in Exam Mode */}
-        {playMode === 'exam' && (
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Clock
-                  className={`h-4 w-4 ${
-                    isUrgentTime
-                      ? 'text-rose-500 animate-ping'
-                      : isWarningTime
-                      ? 'text-amber-500'
-                      : 'text-sky-600 dark:text-sky-400'
+              >
+                <Flame
+                  className={`h-4 w-4 transition-transform duration-300 ${
+                    currentStreak >= 3
+                      ? 'fill-amber-500 text-amber-500 scale-125 animate-bounce'
+                      : currentStreak >= 1
+                      ? 'fill-amber-500 text-amber-500 scale-110'
+                      : 'text-slate-400'
                   }`}
                 />
-                <span className="text-xs font-medium text-slate-600 dark:text-slate-400">{t('timeLabel')}</span>
-                <span
-                  className={`font-mono text-base font-extrabold ${
-                    isUrgentTime ? 'text-rose-500 scale-110' : isWarningTime ? 'text-amber-500' : 'text-slate-900 dark:text-white'
-                  } transition-all`}
-                >
-                  {timeRemaining}s
-                </span>
+                <span className="font-mono">{t('liveStreakLabel', { streak: currentStreak })}</span>
+
+                {currentStreak > 1 && (
+                  <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500 text-white font-extrabold shadow-xs">
+                    {t('liveStreakBonus', { pct: (currentStreak - 1) * 15 })}
+                  </span>
+                )}
               </div>
 
-              <div className="text-xs font-mono text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                <span>
-                  {t('baseScoreLabel')} <strong className="text-slate-900 dark:text-white">{activeDifficulty.basePoints}</strong>
-                </span>
-                <span>·</span>
-                <span>
-                  {t('speedBonusLabel')} <strong className="text-emerald-600 dark:text-emerald-400">+{potentialBonus} pts</strong>
-                </span>
+              {/* Score Display */}
+              <div className="bg-slate-50 px-3 py-1 rounded-2xl border border-slate-200 text-right rtl:text-left">
+                <div className="font-mono text-base font-extrabold text-orange-500">
+                  {currentScore.toLocaleString()}
+                </div>
               </div>
             </div>
-
-            <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-              <div
-                className={`h-full transition-all duration-300 rounded-full ${
-                  isUrgentTime
-                    ? 'bg-rose-500'
-                    : isWarningTime
-                    ? 'bg-amber-500'
-                    : 'bg-indigo-600 dark:bg-indigo-500'
-                }`}
-                style={{ width: `${Math.max(0, timerPercent)}%` }}
-              />
-            </div>
           </div>
-        )}
 
-        {/* Practice Mode Untimed Notice */}
-        {playMode === 'practice' && (
-          <div className="mb-4 flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800/60 font-semibold">
-            <div className="flex items-center gap-2">
-              <GraduationCap className="h-4 w-4" />
-              <span>{isRTL ? 'وضع التدريب: خذ وقتك الكامل للتفكير. سيظهر الشرح بعد الإجابة.' : 'Practice Mode: Take your time. Explanations will appear after answering.'}</span>
+          {/* TIMER BAR: Shown in Exam Mode */}
+          {playMode === 'exam' && (
+            <div className="mt-4 pt-4 border-t border-slate-200">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Clock
+                    className={`h-4 w-4 ${
+                      isUrgentTime
+                        ? 'text-rose-500 animate-ping'
+                        : isWarningTime
+                        ? 'text-amber-500'
+                        : 'text-sky-600'
+                    }`}
+                  />
+                  <span className="text-xs font-medium text-slate-600">{t('timeLabel')}</span>
+                  <span
+                    className={`font-mono text-base font-extrabold ${
+                      isUrgentTime ? 'text-rose-500 scale-110' : isWarningTime ? 'text-amber-500' : 'text-slate-900'
+                    } transition-all`}
+                  >
+                    {timeRemaining}s
+                  </span>
+                </div>
+
+                <div className="text-xs font-mono text-slate-500 flex items-center gap-2">
+                  <span>
+                    {t('baseScoreLabel')} <strong className="text-slate-900">{activeDifficulty.basePoints}</strong>
+                  </span>
+                  <span>·</span>
+                  <span>
+                    {t('speedBonusLabel')} <strong className="text-emerald-600">+{potentialBonus} pts</strong>
+                  </span>
+                </div>
+              </div>
+
+              <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
+                <div
+                  className={`h-full transition-all duration-300 rounded-full ${
+                    isUrgentTime
+                      ? 'bg-rose-500'
+                      : isWarningTime
+                      ? 'bg-amber-500'
+                      : 'bg-orange-500'
+                  }`}
+                  style={{ width: `${Math.max(0, timerPercent)}%` }}
+                />
+              </div>
             </div>
-            <span className="text-[11px] opacity-80">Untimed</span>
-          </div>
-        )}
+          )}
 
-        {/* QUESTION CARD */}
+          {/* Practice Mode Untimed Notice */}
+          {playMode === 'practice' && (
+            <div className="mt-3.5 flex items-center justify-between text-xs text-emerald-800 bg-emerald-50 px-3.5 py-2 rounded-2xl border border-emerald-200 font-semibold">
+              <div className="flex items-center gap-2">
+                <GraduationCap className="h-4 w-4 text-emerald-600" />
+                <span>{isRTL ? 'وضع التدريب: خذ وقتك الكامل للتفكير. سيظهر الشرح بعد الإجابة.' : 'Practice Mode: Take your time. Explanations will appear after answering.'}</span>
+              </div>
+              <span className="text-[11px] opacity-80 font-bold">Untimed</span>
+            </div>
+          )}
+        </div>
+
+        {/* LINE 1: SEPARATING CONTROL BUTTONS FROM THE QUESTION SECTION */}
+        <div className="w-full border-b-2 border-slate-200 my-6" />
+
+        {/* SECTION 2: QUESTION SECTION */}
         <div
-          className={`rounded-2xl border bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-md transition-all ${
-            shakeCard ? 'border-rose-500 animate-buzz-shake shadow-rose-500/20' : 'border-slate-200 dark:border-slate-800'
+          className={`rounded-2xl border-2 bg-white p-6 sm:p-8 shadow-xs transition-all ${
+            shakeCard ? 'border-rose-500 animate-buzz-shake shadow-rose-500/20' : 'border-slate-200'
           }`}
         >
-          <div className="mb-6">
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white leading-relaxed">
-              {currentQ.questionText}
-            </h2>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xs uppercase tracking-wider font-extrabold text-orange-500">
+              {isRTL ? 'نص السؤال' : 'Question Prompt'}
+            </span>
+          </div>
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-relaxed">
+            {currentQ.questionText}
+          </h2>
+        </div>
+
+        {/* LINE 2: SEPARATING QUESTION SECTION FROM THE ANSWERS SECTION */}
+        <div className="w-full border-b-2 border-slate-200 my-6" />
+
+        {/* SECTION 3: ANSWERS SECTION */}
+        <div>
+          <div className="text-xs uppercase tracking-wider font-extrabold text-slate-500 mb-3 flex items-center gap-2">
+            <span>{isRTL ? 'اختر الإجابة الصحيحة:' : 'Select the correct answer:'}</span>
           </div>
 
-          {/* Options */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             {currentQ.options.map((option, idx) => {
               const letter = isRTL
@@ -805,28 +824,26 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
               const isCorrect = idx === currentQ.correctOptionIndex;
 
               let cardStyle =
-                'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 text-slate-800 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-900';
-              let badgeStyle =
-                'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300';
+                'border-slate-200 bg-white text-slate-800 hover:border-orange-500 hover:shadow-orange-500/20 active:scale-[0.99]';
+              let badgeStyle = 'btn-glossy-orange';
 
               if (isAnswered) {
                 if (isSelected && isCorrect) {
                   cardStyle =
-                    'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-100 font-bold ring-2 ring-emerald-500/30';
-                  badgeStyle = 'border-emerald-500 bg-emerald-600 text-white';
+                    'border-emerald-500 bg-emerald-50 text-emerald-950 font-bold ring-2 ring-emerald-500/30';
+                  badgeStyle = 'bg-emerald-600 text-white border-emerald-700';
                 } else if (isSelected && !isCorrect) {
                   cardStyle =
-                    'border-rose-500 bg-rose-50 dark:bg-rose-950/60 text-rose-950 dark:text-rose-100 font-bold ring-2 ring-rose-500/30';
-                  badgeStyle = 'border-rose-500 bg-rose-600 text-white';
+                    'border-rose-500 bg-rose-50 text-rose-950 font-bold ring-2 ring-rose-500/30';
+                  badgeStyle = 'bg-rose-600 text-white border-rose-700';
                 } else if (!isSelected && isCorrect) {
                   cardStyle =
-                    'border-emerald-500/80 bg-emerald-50/60 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 font-semibold';
-                  badgeStyle = 'border-emerald-500 bg-emerald-600 text-white';
+                    'border-emerald-500/80 bg-emerald-50/60 text-emerald-900 font-semibold';
+                  badgeStyle = 'bg-emerald-600 text-white border-emerald-700';
                 } else {
                   cardStyle =
-                    'border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-950/30 text-slate-400 dark:text-slate-600 opacity-60';
-                  badgeStyle =
-                    'border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 text-slate-400';
+                    'border-slate-200 bg-slate-50/60 text-slate-400 opacity-60';
+                  badgeStyle = 'bg-slate-200 text-slate-500 border-slate-300';
                 }
               }
 
@@ -836,79 +853,87 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
                   type="button"
                   disabled={isAnswered}
                   onClick={() => handleSelectOption(idx)}
-                  className={`group relative flex items-center gap-3.5 rounded-xl border p-4 text-left rtl:text-right transition-all select-none cursor-pointer ${cardStyle}`}
+                  className={`group relative flex items-center gap-3.5 rounded-2xl border-2 p-4 text-left rtl:text-right transition-all select-none cursor-pointer shadow-xs ${cardStyle}`}
                 >
                   <div
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border font-mono text-xs font-bold transition-colors ${badgeStyle}`}
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-mono text-xs font-bold transition-transform group-hover:scale-105 ${badgeStyle}`}
                   >
                     {isAnswered && isCorrect ? (
-                      <CheckCircle2 className="h-4 w-4" />
+                      <CheckCircle2 className="h-5 w-5" />
                     ) : isAnswered && isSelected && !isCorrect ? (
-                      <XCircle className="h-4 w-4" />
+                      <XCircle className="h-5 w-5" />
                     ) : (
                       letter
                     )}
                   </div>
-                  <span className="flex-1 text-sm leading-snug">{option}</span>
+                  <span className="flex-1 text-sm font-bold leading-snug">{option}</span>
                 </button>
               );
             })}
           </div>
-
-          {/* PRACTICE MODE: EXPLANATION CARD & MANUAL NEXT BUTTON */}
-          {isAnswered && playMode === 'practice' && (
-            <div className="mt-6 p-5 rounded-2xl border-2 border-sky-500/40 bg-sky-50/80 dark:bg-sky-950/40 text-right">
-              <div className="flex items-center gap-2 mb-2 font-extrabold text-sm text-sky-800 dark:text-sky-300">
-                <BookOpen className="h-4 w-4 text-sky-500" />
-                <span>{t('explanationTitle')}</span>
-              </div>
-
-              <p className="text-sm text-slate-800 dark:text-slate-200 leading-relaxed mb-4">
-                {currentQ.explanation ? (
-                  currentQ.explanation
-                ) : (
-                  <span>
-                    {t('noExplanationGiven')}{' '}
-                    <strong className="text-orange-500 font-bold">
-                      ({currentQ.options[currentQ.correctOptionIndex]})
-                    </strong>
-                  </span>
-                )}
-              </p>
-
-              <button
-                type="button"
-                onClick={() => advanceToNextQuestion(questionResults)}
-                className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25 transition-all cursor-pointer"
-              >
-                <span>{t('nextQuestionBtn')}</span>
-                {isRTL ? <ArrowLeft className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
-              </button>
-            </div>
-          )}
-
-          {/* Feedback banner in Exam Mode */}
-          {isAnswered && playMode === 'exam' && (
-            <div
-              className={`mt-6 rounded-xl border p-3.5 text-xs font-bold flex items-center justify-between transition-all ${
-                lastAnswerCorrect
-                  ? 'border-emerald-500/50 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300'
-                  : 'border-rose-500/50 bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                {lastAnswerCorrect ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-                <span>
-                  {lastAnswerCorrect
-                    ? t('feedbackCorrect', { pts: pointsGainedThisQuestion, mult: activeDifficulty.multiplier })
-                    : selectedOption === -1
-                    ? t('feedbackTimeout')
-                    : t('feedbackWrong')}
-                </span>
-              </div>
-            </div>
-          )}
         </div>
+
+        {/* LINE 3: SEPARATING ANSWERS SECTION FROM ACTION / EXPLANATION SECTION */}
+        {isAnswered && (
+          <>
+            <div className="w-full border-b-2 border-slate-200 my-6" />
+
+            {/* SECTION 4: EXPLANATION / ADVANCE ACTION SECTION */}
+            {playMode === 'practice' && (
+              <div className="rounded-2xl border-2 border-slate-200 bg-white p-6 shadow-xs">
+                <div className="flex items-center gap-2 mb-2 font-extrabold text-sm text-sky-800">
+                  <BookOpen className="h-4 w-4 text-sky-600" />
+                  <span>{t('explanationTitle')}</span>
+                </div>
+
+                <p className="text-sm text-slate-700 leading-relaxed mb-5">
+                  {currentQ.explanation ? (
+                    currentQ.explanation
+                  ) : (
+                    <span>
+                      {t('noExplanationGiven')}{' '}
+                      <strong className="text-orange-600 font-bold">
+                        ({currentQ.options[currentQ.correctOptionIndex]})
+                      </strong>
+                    </span>
+                  )}
+                </p>
+
+                {/* Orange Glossy Rounded Button for Next Question */}
+                <button
+                  type="button"
+                  onClick={() => advanceToNextQuestion(questionResults)}
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-2xl btn-glossy-orange text-sm flex items-center justify-center gap-2.5 cursor-pointer"
+                >
+                  <span>{t('nextQuestionBtn')}</span>
+                  {isRTL ? <ArrowLeft className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
+                </button>
+              </div>
+            )}
+
+            {/* Feedback banner in Exam Mode */}
+            {playMode === 'exam' && (
+              <div
+                className={`rounded-2xl border-2 p-4 text-xs font-bold flex items-center justify-between transition-all ${
+                  lastAnswerCorrect
+                    ? 'border-emerald-500/50 bg-emerald-50 text-emerald-800'
+                    : 'border-rose-500/50 bg-rose-50 text-rose-800'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {lastAnswerCorrect ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                  <span>
+                    {lastAnswerCorrect
+                      ? t('feedbackCorrect', { pts: pointsGainedThisQuestion, mult: activeDifficulty.multiplier })
+                      : selectedOption === -1
+                      ? t('feedbackTimeout')
+                      : t('feedbackWrong')}
+                  </span>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
     );
   }
@@ -920,21 +945,21 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-      {/* Summary Card (Personal Mastery Focus - No Social Comparison) */}
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 text-center shadow-lg">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-tr from-orange-500 to-sky-600 text-white shadow-lg mb-4 text-2xl">
+      {/* SECTION 1: RESULT BANNER */}
+      <div className="rounded-2xl border-2 border-slate-200 bg-white p-6 sm:p-8 text-center shadow-xs">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-50 border-2 border-orange-200 text-orange-500 shadow-sm mb-4 text-3xl">
           {accuracyPercent >= 80 ? '🏆' : accuracyPercent >= 50 ? '⭐' : '🎯'}
         </div>
 
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border mb-3 bg-sky-50 dark:bg-sky-950 border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-300">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-2xl text-xs font-bold border-2 mb-3 bg-sky-50 border-sky-200 text-sky-700">
           <span>{playMode === 'practice' ? '🎓 Practice Complete' : '⏱️ 30s Exam Complete'}</span>
         </div>
 
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-900">
           {t('completedTitle')}
         </h1>
 
-        <div className="my-6 max-w-xs mx-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/80 p-5">
+        <div className="my-6 max-w-xs mx-auto rounded-2xl border-2 border-slate-200 bg-slate-50 p-5">
           <div className="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">
             {t('finalScoreLabel')}
           </div>
@@ -942,67 +967,76 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
             {currentScore.toLocaleString()}
           </div>
         </div>
+      </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto my-6">
-          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-3">
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">{t('accuracyLabel')}</div>
-            <div className="font-mono text-xl font-bold text-slate-900 dark:text-white mt-1">{accuracyPercent}%</div>
-            <div className="text-[10px] text-slate-500">
-              {t('accuracyCount', { correct: correctCount, total: questionResults.length })}
-            </div>
-          </div>
+      {/* LINE SEPARATING RESULT BANNER FROM STATS GRID */}
+      <div className="w-full border-b-2 border-slate-200 my-6" />
 
-          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-3">
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">{t('bestStreakLabel')}</div>
-            <div className="font-mono text-xl font-bold text-amber-500 dark:text-amber-400 mt-1">
-              {bestStreak} 🔥
-            </div>
-            <div className="text-[10px] text-slate-500">{t('inARowLabel')}</div>
-          </div>
-
-          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-3">
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Mode</div>
-            <div className="font-mono text-sm font-bold text-slate-900 dark:text-white mt-1">
-              {playMode === 'practice' ? 'Practice' : 'Exam 30s'}
-            </div>
-            <div className="text-[10px] text-slate-500">{playMode === 'practice' ? 'Untimed' : 'Speed test'}</div>
-          </div>
-
-          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-3">
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Total Questions</div>
-            <div className="font-mono text-xl font-bold text-sky-600 dark:text-sky-400 mt-1">
-              {questionResults.length}
-            </div>
-            <div className="text-[10px] text-slate-500">Reviewed</div>
+      {/* SECTION 2: STATS GRID */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="rounded-2xl border-2 border-slate-200 bg-white p-3.5 text-center">
+          <div className="text-[11px] text-slate-500 font-semibold">{t('accuracyLabel')}</div>
+          <div className="font-mono text-xl font-black text-slate-900 mt-1">{accuracyPercent}%</div>
+          <div className="text-[10px] text-slate-500">
+            {t('accuracyCount', { correct: correctCount, total: questionResults.length })}
           </div>
         </div>
 
-        {/* 2 Clean Action Buttons Only */}
-        <div className="flex flex-wrap items-center justify-center gap-3 pt-4 border-t border-slate-200 dark:border-slate-800/80">
-          <button
-            type="button"
-            onClick={handleStartQuiz}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs text-white bg-orange-500 hover:bg-orange-600 transition-colors shadow-sm cursor-pointer"
-          >
-            <RotateCcw className="h-4 w-4" />
-            <span>{t('playAgainBtn')}</span>
-          </button>
+        <div className="rounded-2xl border-2 border-slate-200 bg-white p-3.5 text-center">
+          <div className="text-[11px] text-slate-500 font-semibold">{t('bestStreakLabel')}</div>
+          <div className="font-mono text-xl font-black text-amber-500 mt-1">
+            {bestStreak} 🔥
+          </div>
+          <div className="text-[10px] text-slate-500">{t('inARowLabel')}</div>
+        </div>
 
-          <button
-            type="button"
-            onClick={() => setGameState('lobby')}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-xs text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-          >
-            <span>{t('backToLobbyBtn')}</span>
-          </button>
+        <div className="rounded-2xl border-2 border-slate-200 bg-white p-3.5 text-center">
+          <div className="text-[11px] text-slate-500 font-semibold">Mode</div>
+          <div className="font-mono text-sm font-black text-slate-900 mt-1">
+            {playMode === 'practice' ? 'Practice' : 'Exam 30s'}
+          </div>
+          <div className="text-[10px] text-slate-500">{playMode === 'practice' ? 'Untimed' : 'Speed test'}</div>
+        </div>
+
+        <div className="rounded-2xl border-2 border-slate-200 bg-white p-3.5 text-center">
+          <div className="text-[11px] text-slate-500 font-semibold">Total Questions</div>
+          <div className="font-mono text-xl font-black text-sky-600 mt-1">
+            {questionResults.length}
+          </div>
+          <div className="text-[10px] text-slate-500">Reviewed</div>
         </div>
       </div>
 
-      {/* QUESTION REVIEW WITH DETAILED EXPLANATIONS */}
-      <div className="mt-8">
-        <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-          <BarChart3 className="h-4 w-4 text-sky-500" />
+      {/* LINE SEPARATING STATS GRID FROM ACTION BUTTONS */}
+      <div className="w-full border-b-2 border-slate-200 my-6" />
+
+      {/* SECTION 3: ORANGE GLOSSY ROUNDED ACTION BUTTONS */}
+      <div className="rounded-2xl border-2 border-slate-200 bg-white p-6 shadow-xs flex flex-wrap items-center justify-center gap-4">
+        <button
+          type="button"
+          onClick={handleStartQuiz}
+          className="px-8 py-3.5 rounded-2xl text-sm btn-glossy-orange flex items-center justify-center gap-2 cursor-pointer"
+        >
+          <RotateCcw className="h-4 w-4" />
+          <span>{t('playAgainBtn')}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setGameState('lobby')}
+          className="px-8 py-3.5 rounded-2xl text-sm btn-glossy-orange-outline flex items-center justify-center gap-2 cursor-pointer"
+        >
+          <span>{t('backToLobbyBtn')}</span>
+        </button>
+      </div>
+
+      {/* LINE SEPARATING ACTION BUTTONS FROM ROUND REVIEW */}
+      <div className="w-full border-b-2 border-slate-200 my-6" />
+
+      {/* SECTION 4: ROUND REVIEW WITH EXPLANATIONS */}
+      <div>
+        <h3 className="text-base font-extrabold text-slate-900 mb-4 flex items-center gap-2">
+          <BarChart3 className="h-4 w-4 text-sky-600" />
           <span>{t('roundReviewTitle')}</span>
         </h3>
 
@@ -1017,24 +1051,24 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
             return (
               <div
                 key={idx}
-                className={`rounded-2xl border p-4 sm:p-5 transition-colors ${
+                className={`rounded-2xl border-2 p-4 sm:p-5 transition-colors bg-white ${
                   isCorrect
-                    ? 'border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/50 dark:bg-emerald-950/20'
-                    : 'border-rose-200 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/20'
+                    ? 'border-emerald-300'
+                    : 'border-rose-300'
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-2.5 flex-1">
                     <span className="font-mono text-xs font-bold text-slate-400 mt-0.5">#{idx + 1}</span>
                     <div className="flex-1">
-                      <p className="text-sm font-bold text-slate-900 dark:text-white">{res.questionText}</p>
+                      <p className="text-sm font-bold text-slate-900">{res.questionText}</p>
 
                       <div className="mt-2 text-xs space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-slate-500 dark:text-slate-400">{t('yourAnswerLabel')}</span>
+                          <span className="text-slate-500">{t('yourAnswerLabel')}</span>
                           <span
-                            className={`font-semibold ${
-                              isCorrect ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'
+                            className={`font-bold ${
+                              isCorrect ? 'text-emerald-700' : 'text-rose-700'
                             }`}
                           >
                             {chosenAnswer}
@@ -1043,16 +1077,16 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
 
                         {!isCorrect && (
                           <div className="flex items-center gap-2">
-                            <span className="text-slate-500 dark:text-slate-400">{t('correctAnswerLabel')}</span>
-                            <span className="text-emerald-700 dark:text-emerald-400 font-bold">{correctAnswer}</span>
+                            <span className="text-slate-500">{t('correctAnswerLabel')}</span>
+                            <span className="text-emerald-700 font-bold">{correctAnswer}</span>
                           </div>
                         )}
                       </div>
 
                       {/* Explanation in Review */}
                       {originalQ?.explanation && (
-                        <div className="mt-3 p-3 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
-                          <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
+                        <div className="mt-3 p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-700 leading-relaxed">
+                          <strong className="text-emerald-600 font-bold">
                             {t('explanationTitle')}:{' '}
                           </strong>
                           {originalQ.explanation}
@@ -1064,7 +1098,7 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
                   <div className="text-right rtl:text-left shrink-0">
                     <span
                       className={`inline-flex items-center gap-1 text-xs font-bold ${
-                        isCorrect ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'
+                        isCorrect ? 'text-emerald-700' : 'text-rose-700'
                       }`}
                     >
                       {isCorrect ? (

@@ -9,16 +9,16 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: 'dark',
+  theme: 'light',
   toggleTheme: () => {},
-  isDark: true,
+  isDark: false,
 });
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>(() => {
     const saved = localStorage.getItem('quizsmash_theme');
     if (saved === 'light' || saved === 'dark') return saved;
-    return 'dark'; // default to high-contrast dark
+    return 'light'; // default to crisp white UI
   });
 
   useEffect(() => {
