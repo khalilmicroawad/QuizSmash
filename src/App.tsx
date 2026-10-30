@@ -67,16 +67,10 @@ function QuizSmashApp() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#07131e] text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-orange-500 selection:text-white transition-colors duration-200">
-      {/* Universal Top Bar with Quiz Smash & Theme & Language & Install Switcher */}
+      {/* Universal Top Bar with Quiz Smash & Theme & Language Switcher */}
       <Header
         currentTab={currentTab}
         onSelectTab={setCurrentTab}
-        activeProfile={activeProfile}
-        soundEnabled={soundEnabled}
-        onToggleSound={handleToggleSound}
-        isQuizActive={false}
-        onQuickStart={() => setCurrentTab('play')}
-        onOpenInstallModal={() => setIsInstallModalOpen(true)}
       />
 
       {/* Main Content Area */}

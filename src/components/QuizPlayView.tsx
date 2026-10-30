@@ -432,7 +432,7 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
         <div className="mb-8 rounded-2xl border border-slate-200 dark:border-slate-800 bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 p-6 sm:p-8 shadow-sm">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
             <div>
-              <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 mb-2">
+              <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-sky-600 dark:text-sky-400 mb-2">
                 <span>{t('arenaBadge')}</span>
                 <span>·</span>
                 <span>{t('randomizedBadge')}</span>
@@ -450,11 +450,11 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
             <div className="flex items-center gap-4 bg-white dark:bg-slate-800/80 p-4 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-xs">
               <div className="text-right rtl:text-left">
                 <div className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold">{t('highScore')}</div>
-                <div className="font-mono text-xl font-extrabold text-indigo-600 dark:text-indigo-400">
+                <div className="font-mono text-xl font-extrabold text-orange-500">
                   {activeProfile.highScore.toLocaleString()}
                 </div>
               </div>
-              <Zap className="h-8 w-8 text-indigo-500 shrink-0" />
+              <Zap className="h-8 w-8 text-orange-500 shrink-0" />
             </div>
           </div>
         </div>
@@ -638,7 +638,7 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+              <div className="w-full sm:w-auto">
                 <button
                   type="button"
                   onClick={handleStartQuiz}
@@ -653,14 +653,6 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
                       : t('startQuizSmashBtn')}
                   </span>
                   {isRTL ? <ArrowLeft className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={onNavigateToBank}
-                  className="text-xs text-slate-500 dark:text-slate-400 hover:text-orange-500 dark:hover:text-orange-400 px-3 py-2 cursor-pointer font-bold"
-                >
-                  {t('manageTxtBankBtn')}
                 </button>
               </div>
             </div>
@@ -741,7 +733,7 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
                       ? 'text-rose-500 animate-ping'
                       : isWarningTime
                       ? 'text-amber-500'
-                      : 'text-indigo-600 dark:text-indigo-400'
+                      : 'text-sky-600 dark:text-sky-400'
                   }`}
                 />
                 <span className="text-xs font-medium text-slate-600 dark:text-slate-400">{t('timeLabel')}</span>
@@ -930,11 +922,11 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       {/* Summary Card (Personal Mastery Focus - No Social Comparison) */}
       <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 text-center shadow-lg">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-600 to-emerald-600 text-white shadow-lg mb-4 text-2xl">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-tr from-orange-500 to-sky-600 text-white shadow-lg mb-4 text-2xl">
           {accuracyPercent >= 80 ? '🏆' : accuracyPercent >= 50 ? '⭐' : '🎯'}
         </div>
 
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border mb-3 bg-indigo-50 dark:bg-indigo-950 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border mb-3 bg-sky-50 dark:bg-sky-950 border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-300">
           <span>{playMode === 'practice' ? '🎓 Practice Complete' : '⏱️ 30s Exam Complete'}</span>
         </div>
 
@@ -946,7 +938,7 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
           <div className="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">
             {t('finalScoreLabel')}
           </div>
-          <div className="font-mono text-3xl font-black text-indigo-600 dark:text-indigo-400">
+          <div className="font-mono text-3xl font-black text-orange-500">
             {currentScore.toLocaleString()}
           </div>
         </div>
@@ -979,19 +971,19 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
 
           <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-3">
             <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Total Questions</div>
-            <div className="font-mono text-xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">
+            <div className="font-mono text-xl font-bold text-sky-600 dark:text-sky-400 mt-1">
               {questionResults.length}
             </div>
             <div className="text-[10px] text-slate-500">Reviewed</div>
           </div>
         </div>
 
-        {/* Action buttons (Personal navigation only - NO LEADERBOARD) */}
+        {/* 2 Clean Action Buttons Only */}
         <div className="flex flex-wrap items-center justify-center gap-3 pt-4 border-t border-slate-200 dark:border-slate-800/80">
           <button
             type="button"
             onClick={handleStartQuiz}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs text-white bg-indigo-600 hover:bg-indigo-500 transition-colors shadow-sm cursor-pointer"
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs text-white bg-orange-500 hover:bg-orange-600 transition-colors shadow-sm cursor-pointer"
           >
             <RotateCcw className="h-4 w-4" />
             <span>{t('playAgainBtn')}</span>
@@ -1000,7 +992,7 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
           <button
             type="button"
             onClick={() => setGameState('lobby')}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-xs text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-xs text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
           >
             <span>{t('backToLobbyBtn')}</span>
           </button>
@@ -1010,7 +1002,7 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
       {/* QUESTION REVIEW WITH DETAILED EXPLANATIONS */}
       <div className="mt-8">
         <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-          <BarChart3 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+          <BarChart3 className="h-4 w-4 text-sky-500" />
           <span>{t('roundReviewTitle')}</span>
         </h3>
 
