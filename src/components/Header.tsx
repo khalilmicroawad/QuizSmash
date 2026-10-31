@@ -1,13 +1,12 @@
 import React from 'react';
-import { User, BookOpen, Play, Sun, Moon, Zap, Globe, LogOut } from 'lucide-react';
+import { User, Play, Zap, Globe, LogOut, GraduationCap } from 'lucide-react';
 import { UserProfile } from '../types/quiz';
-import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 
 interface HeaderProps {
-  currentTab: 'play' | 'bank' | 'profile';
-  onSelectTab: (tab: 'play' | 'bank' | 'profile') => void;
+  currentTab: 'subjects' | 'play' | 'profile' | 'bank';
+  onSelectTab: (tab: 'subjects' | 'play' | 'profile' | 'bank') => void;
   activeProfile?: UserProfile;
   soundEnabled?: boolean;
   onToggleSound?: () => void;
@@ -20,7 +19,6 @@ export const Header: React.FC<HeaderProps> = ({
   currentTab,
   onSelectTab,
 }) => {
-  const { toggleTheme, isDark } = useTheme();
   const { language, toggleLanguage, t, isRTL } = useLanguage();
   const { user, isUnlocked, isPermanent, isTrialActive, timeLeftFormatted, signOutUser } = useAuth();
 
@@ -30,7 +28,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Brand wordmark with glossy orange rounded icon */}
         <button
           type="button"
-          onClick={() => onSelectTab('play')}
+          onClick={() => onSelectTab('subjects')}
           className="flex items-center gap-2 text-base font-black tracking-tight text-slate-900 cursor-pointer hover:opacity-90 transition-opacity"
         >
           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-b from-orange-400 via-orange-500 to-orange-600 border border-orange-500 border-t-orange-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_2px_6px_rgba(249,115,22,0.3)] text-white">
@@ -45,9 +43,22 @@ export const Header: React.FC<HeaderProps> = ({
           </span>
         </button>
 
-        {/* Clean Nav Tabs with Orange Glossy Rounded active state */}
+        {/* Clean Nav Tabs with Orange Glossy Rounded active state (Simplified: Dental Faculty, Play, Profile) */}
         {user && isUnlocked && (
-          <nav className="hidden sm:flex items-center gap-1 p-1 bg-slate-50 rounded-2xl border border-slate-200 text-xs font-bold">
+          <nav className="hidden sm:flex items-center gap-1.5 p-1 bg-slate-50 rounded-2xl border border-slate-200 text-xs font-bold">
+            <button
+              type="button"
+              onClick={() => onSelectTab('subjects')}
+              className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
+                currentTab === 'subjects'
+                  ? 'btn-glossy-orange'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <GraduationCap className="h-3.5 w-3.5" />
+              <span>{isRTL ? 'المواد (المرحلة الأولى)' : 'Dental Faculty'}</span>
+            </button>
+
             <button
               type="button"
               onClick={() => onSelectTab('play')}
@@ -59,19 +70,6 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Play className="h-3.5 w-3.5" />
               <span>{t('navPlay')}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onSelectTab('bank')}
-              className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
-                currentTab === 'bank'
-                  ? 'btn-glossy-orange'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              <BookOpen className="h-3.5 w-3.5" />
-              <span>{t('navBank')}</span>
             </button>
 
             <button
@@ -89,7 +87,7 @@ export const Header: React.FC<HeaderProps> = ({
           </nav>
         )}
 
-        {/* Right Action Controls: Language, Theme, Status & Sign Out */}
+        {/* Right Action Controls: Language, Status & Sign Out (No Day/Night Switcher) */}
         <div className="flex items-center gap-2 shrink-0">
           {/* Status Badge */}
           {user && (
@@ -118,17 +116,6 @@ export const Header: React.FC<HeaderProps> = ({
             <span>{language === 'en' ? 'العربية' : 'English'}</span>
           </button>
 
-          {/* Theme Toggle */}
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label={isDark ? t('themeDarkTooltip') : t('themeLightTooltip')}
-            title={isDark ? t('themeDarkTooltip') : t('themeLightTooltip')}
-            className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-orange-500 transition-colors cursor-pointer shadow-xs"
-          >
-            {isDark ? <Sun className="h-3.5 w-3.5 text-orange-400" /> : <Moon className="h-3.5 w-3.5 text-sky-600" />}
-          </button>
-
           {/* Sign Out */}
           {user && (
             <button
@@ -146,39 +133,42 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Mobile nav tabs */}
       {user && isUnlocked && (
-        <div className="flex sm:hidden border-t-2 border-slate-200 bg-white px-2 py-1.5 justify-around text-xs font-bold">
+        <div className="flex sm:hidden border-t-2 border-slate-200 bg-white px-3 py-1.5 justify-around text-xs font-bold">
+          <button
+            type="button"
+            onClick={() => onSelectTab('subjects')}
+            className={`py-1.5 px-3 rounded-xl transition-all flex items-center gap-1.5 ${
+              currentTab === 'subjects'
+                ? 'btn-glossy-orange'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <GraduationCap className="h-3.5 w-3.5" />
+            <span>{isRTL ? 'المواد' : 'Subjects'}</span>
+          </button>
           <button
             type="button"
             onClick={() => onSelectTab('play')}
-            className={`py-1.5 px-3 rounded-xl transition-all ${
+            className={`py-1.5 px-3 rounded-xl transition-all flex items-center gap-1.5 ${
               currentTab === 'play'
                 ? 'btn-glossy-orange'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            {t('navPlay')}
-          </button>
-          <button
-            type="button"
-            onClick={() => onSelectTab('bank')}
-            className={`py-1.5 px-3 rounded-xl transition-all ${
-              currentTab === 'bank'
-                ? 'btn-glossy-orange'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            {t('navBank')}
+            <Play className="h-3.5 w-3.5" />
+            <span>{t('navPlay')}</span>
           </button>
           <button
             type="button"
             onClick={() => onSelectTab('profile')}
-            className={`py-1.5 px-3 rounded-xl transition-all ${
+            className={`py-1.5 px-3 rounded-xl transition-all flex items-center gap-1.5 ${
               currentTab === 'profile'
                 ? 'btn-glossy-orange'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            {t('navProfile')}
+            <User className="h-3.5 w-3.5" />
+            <span>{t('navProfile')}</span>
           </button>
         </div>
       )}

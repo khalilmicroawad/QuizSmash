@@ -6,6 +6,8 @@ import { ProfileView } from './components/ProfileView';
 import { PaywallView } from './components/PaywallView';
 import { AccessCodeGate } from './components/AccessCodeGate';
 import { AuthScreen } from './components/AuthScreen';
+import { DentalFacultyHub } from './components/DentalFacultyHub';
+import { DentalSubject, DENTAL_FACULTY_SUBJECTS } from './data/dentalSubjects';
 import { Question, UserProfile } from './types/quiz';
 import { StorageService } from './services/storageService';
 import { sound } from './services/soundService';
@@ -16,7 +18,8 @@ import { InstallModal } from './components/InstallModal';
 import { fetchCnsTestQuestions } from './services/cnsTestService';
 
 function QuizSmashApp() {
-  const [currentTab, setCurrentTab] = useState<'play' | 'bank' | 'profile'>('play');
+  const [currentTab, setCurrentTab] = useState<'subjects' | 'play' | 'bank' | 'profile'>('subjects');
+  const [currentSubject, setCurrentSubject] = useState<DentalSubject>(DENTAL_FACULTY_SUBJECTS[1]); // General Human Anatomy
   const [questions, setQuestions] = useState<Question[]>(() => StorageService.getQuestions());
   const [activeProfile, setActiveProfile] = useState<UserProfile>(() => StorageService.getActiveProfile());
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => sound.isEnabled());
@@ -102,6 +105,19 @@ function QuizSmashApp() {
         ) : (
           /* Step 3: Unlocked quiz arena (within 24h trial OR permanently activated via 20,000 IQD code) */
           <>
+            {currentTab === 'subjects' && (
+              <DentalFacultyHub
+                onSelectSubject={(subject) => {
+                  setCurrentSubject(subject);
+                }}
+                onLaunchQuiz={() => {
+                  setCurrentTab('play');
+                }}
+                questions={questions}
+                onQuestionsUpdated={handleQuestionsUpdated}
+              />
+            )}
+
             {currentTab === 'play' && (
               <QuizPlayView
                 questions={questions}
@@ -111,6 +127,8 @@ function QuizSmashApp() {
                 onProfileUpdated={refreshProfile}
                 onQuestionsUploaded={handleQuestionsUpdated}
                 onOpenInstallModal={() => setIsInstallModalOpen(true)}
+                onNavigateToSubjects={() => setCurrentTab('subjects')}
+                activeSubjectName={currentSubject?.nameEn}
               />
             )}
 
@@ -137,12 +155,12 @@ function QuizSmashApp() {
       <footer className="border-t-2 border-slate-200 bg-white py-6 text-center text-xs text-slate-500 transition-colors">
         <div className="mx-auto max-w-7xl px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="font-extrabold text-slate-900 dark:text-slate-300">{t('brandName')}</span>
+            <span className="font-extrabold text-slate-900">{t('brandName')}</span>
             <span>·</span>
             <span>{t('footerTagline')}</span>
           </div>
 
-          <div className="flex items-center gap-4 text-[11px] text-slate-500 dark:text-slate-400">
+          <div className="flex items-center gap-4 text-[11px] text-slate-500">
             <span>{t('footerFeature1')}</span>
             <span>·</span>
             <span>{t('footerFeature2')}</span>

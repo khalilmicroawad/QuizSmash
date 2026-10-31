@@ -24,7 +24,6 @@ import confetti from 'canvas-confetti';
 import { Question, QuizSettings, QuizAttempt, QuestionResult, UserProfile } from '../types/quiz';
 import { sound } from '../services/soundService';
 import { StorageService } from '../services/storageService';
-import { parseQuestionBank, getSampleTxtTemplate } from '../services/questionParser';
 import { getTimerDifficulty, calculateQuestionScore, FIXED_TIMER_SECONDS } from '../services/scoringService';
 import { useLanguage } from '../context/LanguageContext';
 import { fetchCnsTestQuestions } from '../services/cnsTestService';
@@ -33,10 +32,12 @@ interface QuizPlayViewProps {
   questions: Question[];
   activeProfile: UserProfile;
   soundEnabled: boolean;
-  onNavigateToBank: () => void;
+  onNavigateToBank?: () => void;
   onProfileUpdated: () => void;
   onQuestionsUploaded?: (questions: Question[]) => void;
   onOpenInstallModal?: () => void;
+  onNavigateToSubjects?: () => void;
+  activeSubjectName?: string;
 }
 
 export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
@@ -47,6 +48,8 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
   onProfileUpdated,
   onQuestionsUploaded,
   onOpenInstallModal,
+  onNavigateToSubjects,
+  activeSubjectName,
 }) => {
   const { t, isRTL, language } = useLanguage();
 
@@ -429,6 +432,26 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
   if (gameState === 'lobby') {
     return (
       <div className="mx-auto max-w-4xl px-4 py-6">
+        {/* Navigation back to Dental Faculty Subjects */}
+        {onNavigateToSubjects && (
+          <div className="mb-4 flex items-center justify-between flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={onNavigateToSubjects}
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 font-bold text-xs cursor-pointer transition-colors shadow-xs"
+            >
+              {isRTL ? <ArrowRight className="w-3.5 h-3.5" /> : <ArrowLeft className="w-3.5 h-3.5" />}
+              <span>{isRTL ? 'الرجوع إلى مواد طب الأسنان (المرحلة الأولى)' : '← Dental faculty (first level)'}</span>
+            </button>
+            {activeSubjectName && (
+              <span className="text-xs font-bold text-orange-700 bg-orange-50 px-3 py-1 rounded-xl border border-orange-200 flex items-center gap-1.5">
+                <Brain className="w-3.5 h-3.5 text-orange-500" />
+                <span>{activeSubjectName}</span>
+              </span>
+            )}
+          </div>
+        )}
+
         {/* SECTION 1: ARENA BANNER */}
         <div className="rounded-2xl border-2 border-slate-200 bg-white p-6 sm:p-7 shadow-xs">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
@@ -1016,11 +1039,11 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
       <div className="w-full border-b-2 border-slate-200 my-6" />
 
       {/* SECTION 3: ORANGE GLOSSY ROUNDED ACTION BUTTONS */}
-      <div className="rounded-2xl border-2 border-slate-200 bg-white p-6 shadow-xs flex flex-wrap items-center justify-center gap-4">
+      <div className="rounded-2xl border-2 border-slate-200 bg-white p-6 shadow-xs flex flex-wrap items-center justify-center gap-3">
         <button
           type="button"
           onClick={handleStartQuiz}
-          className="px-8 py-3.5 rounded-2xl text-sm btn-glossy-orange flex items-center justify-center gap-2 cursor-pointer"
+          className="px-6 py-3.5 rounded-2xl text-xs sm:text-sm btn-glossy-orange flex items-center justify-center gap-2 cursor-pointer"
         >
           <RotateCcw className="h-4 w-4" />
           <span>{t('playAgainBtn')}</span>
@@ -1029,10 +1052,21 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
         <button
           type="button"
           onClick={() => setGameState('lobby')}
-          className="px-8 py-3.5 rounded-2xl text-sm btn-glossy-orange-outline flex items-center justify-center gap-2 cursor-pointer"
+          className="px-6 py-3.5 rounded-2xl text-xs sm:text-sm btn-glossy-orange-outline flex items-center justify-center gap-2 cursor-pointer"
         >
           <span>{t('backToLobbyBtn')}</span>
         </button>
+
+        {onNavigateToSubjects && (
+          <button
+            type="button"
+            onClick={onNavigateToSubjects}
+            className="px-6 py-3.5 rounded-2xl text-xs sm:text-sm border-2 border-orange-300 bg-orange-50 text-orange-700 hover:bg-orange-100 font-black flex items-center justify-center gap-2 cursor-pointer transition-colors"
+          >
+            <GraduationCap className="h-4 w-4 text-orange-500" />
+            <span>{isRTL ? 'مواد طب الأسنان' : 'Dental faculty (first level)'}</span>
+          </button>
+        )}
       </div>
 
       {/* LINE SEPARATING ACTION BUTTONS FROM ROUND REVIEW */}

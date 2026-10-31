@@ -231,14 +231,14 @@ export const translations: Record<Language, Translations> = {
     brandName: 'Quiz Smash',
     brandTagline: 'Randomized MCQ Arena with Buzzer Feedback',
     navPlay: 'Play Quiz',
-    navBank: 'Upload .txt Bank',
+    navBank: 'Dental Faculty',
     navLeaderboard: 'Leaderboard',
     navProfile: 'Profile',
     quickStart: 'Start Quiz',
     soundOnTooltip: 'Sound is on (Click to mute buzzer)',
     soundOffTooltip: 'Sound is muted (Click to enable)',
-    themeLightTooltip: 'Switch to Dark Mode',
-    themeDarkTooltip: 'Switch to Light Mode',
+    themeLightTooltip: 'White Theme',
+    themeDarkTooltip: 'White Theme',
     languageName: 'English',
     switchLangTooltip: 'تغيير اللغة إلى العربية',
     installOnPhone: 'Install App (PC & Phone)',
@@ -286,17 +286,17 @@ export const translations: Record<Language, Translations> = {
     arenaDescription:
       'Test your knowledge under pressure! 30 seconds per question with real-time speed bonuses. Questions and answer choices are randomized every round. Wrong answers trigger an immediate buzzer sound and advance to the next question.',
     highScore: 'High Score:',
-    emptyBankTitle: 'Upload Your .txt Question Bank',
+    emptyBankTitle: 'CNS Test Question Bank',
     emptyBankDesc:
-      'Upload a .txt file with your questions. Mark each correct answer with a + sign in front. Questions and answers are automatically randomized!',
-    uploadBankBtn: 'Upload .txt Question Bank',
-    loadSampleBtn: 'Load Sample Bank',
+      '105 Central Nervous System MCQs for first-year dental students. Questions and answers are automatically randomized!',
+    uploadBankBtn: 'CNS Test',
+    loadSampleBtn: 'Load CNS Bank',
     bankReady: 'Bank Ready',
     questionsCountLoaded: '{count} Questions Loaded',
     playingWithTimerDesc:
       'Playing with a 30-second timer per question. Earn {base} base pts + speed bonuses for fast answers!',
     startQuizSmashBtn: 'START QUIZ SMASH',
-    manageTxtBankBtn: 'Manage .txt bank',
+    manageTxtBankBtn: 'CNS Test',
     fixedTimerRuleTitle: 'Fixed 30-Second Challenge',
     fixedTimerRuleDesc:
       'Every question has a strict 30-second timer with instant buzzer feedback on wrong answers. Fast correct answers earn extra speed points!',
@@ -374,10 +374,10 @@ export const translations: Record<Language, Translations> = {
     wrongBuzzedLabel: 'Wrong / Buzzed',
 
     // Question Bank View
-    bankHeaderTitle: 'Upload Question Bank (.txt)',
+    bankHeaderTitle: 'CNS Question Bank',
     bankLoadedSummary: '{count} questions currently loaded and ready to play.',
-    bankEmptySummary: 'No questions uploaded yet. Upload a .txt file below to start.',
-    sampleTxtBtn: 'Sample .txt',
+    bankEmptySummary: 'Click CNS Test below to load questions.',
+    sampleTxtBtn: 'CNS Test',
     exportBtn: 'Export',
     clearBankBtn: 'Clear Bank',
     clearBankConfirm: 'Clear all questions from your bank?',
@@ -465,8 +465,8 @@ export const translations: Record<Language, Translations> = {
     // Footer
     footerTagline: 'Randomized MCQ Arena with Buzzer Feedback',
     footerFeature1: '30s Per Question',
-    footerFeature2: 'Light & Dark Mode',
-    footerFeature3: 'Upload .txt Question Bank',
+    footerFeature2: 'Dental Faculty (First Level)',
+    footerFeature3: 'CNS Test (105 MCQs)',
   },
 
   ar: {
@@ -474,14 +474,14 @@ export const translations: Record<Language, Translations> = {
     brandName: 'كويز سماش',
     brandTagline: 'ساحة أسئلة متعددة الخيارات عشوائية مع صفارة إنذار فورية',
     navPlay: 'بدء اللعب',
-    navBank: 'رفع بنك الأسئلة (.txt)',
+    navBank: 'مواد طب الأسنان',
     navLeaderboard: 'لوحة الصدارة',
     navProfile: 'الملف الشخصي',
     quickStart: 'ابدأ الكويز',
     soundOnTooltip: 'الصوت مفعّل (انقر لكتم صوت الصفارة)',
     soundOffTooltip: 'الصوت مكتوم (انقر لتفعيل الصوت)',
-    themeLightTooltip: 'التبديل إلى الوضع الداكن',
-    themeDarkTooltip: 'التبديل إلى الوضع الفاتح',
+    themeLightTooltip: 'الوضع الأبيض النقي',
+    themeDarkTooltip: 'الوضع الأبيض النقي',
     languageName: 'العربية',
     switchLangTooltip: 'Switch language to English',
     installOnPhone: 'تثبيت التطبيق (كمبيوتر وهاتف)',
@@ -529,17 +529,17 @@ export const translations: Record<Language, Translations> = {
     arenaDescription:
       'اختبر معلوماتك وسرعة بديهتك تحت الضغط! 30 ثانية لكل سؤال مع مكافآت السرعة. يتم ترتيب الأسئلة والخيارات عشوائياً في كل جولة. الإجابات الخاطئة تُصدر صوت صفارة إنذار (بزر) فوراً وتنقلك مباشرة إلى السؤال التالي.',
     highScore: 'أعلى نتيجة:',
-    emptyBankTitle: 'ارفع بنك الأسئلة بصيغة .txt',
+    emptyBankTitle: 'بنك أسئلة الـ CNS',
     emptyBankDesc:
-      'ارفع ملف .txt يحتوي على أسئلتك. ميّز كل إجابة صحيحة بوضع علامة + أمامها مباشرة. سيتم خلط الأسئلة والخيارات الأربعة عشوائياً في كل مرة!',
-    uploadBankBtn: 'رفع بنك الأسئلة (.txt)',
-    loadSampleBtn: 'تحميل نموذج أسئلة جاهز',
+      '105 أسئلة اختيار من متعدد في تشريح الجهاز العصبي المركزي لطلبة طب الأسنان. يتم خلط الأسئلة والخيارات عشوائياً!',
+    uploadBankBtn: 'اختبار CNS',
+    loadSampleBtn: 'تحميل اختبار CNS',
     bankReady: 'البنك جاهز',
     questionsCountLoaded: 'تم تحميل {count} سؤال',
     playingWithTimerDesc:
       'اللعب بمؤقت 30 ثانية لكل سؤال. اكسب {base} نقطة أساسية + مكافآت السرعة للإجابة السريعة!',
     startQuizSmashBtn: 'ابدأ كويز سماش الآن',
-    manageTxtBankBtn: 'إدارة بنك .txt',
+    manageTxtBankBtn: 'اختبار CNS',
     fixedTimerRuleTitle: 'تحدي الـ 30 ثانية الموحد',
     fixedTimerRuleDesc:
       'كل سؤال يحتوي على عد تنازلي مدته 30 ثانية مع صفارة إنذار فورية عند الخطأ. الإجابات السريعة الصحيحة تمنحك نقاط سرعة إضافية!',
@@ -617,10 +617,10 @@ export const translations: Record<Language, Translations> = {
     wrongBuzzedLabel: 'خاطئة / صفارة إنذار',
 
     // Question Bank View
-    bankHeaderTitle: 'رفع بنك الأسئلة (.txt)',
+    bankHeaderTitle: 'بنك أسئلة الـ CNS',
     bankLoadedSummary: 'يوجد حالياً {count} سؤال في البنك جاهزة للعب.',
-    bankEmptySummary: 'لم يتم رفع أسئلة بعد. ارفع ملف .txt أدناه للبدء.',
-    sampleTxtBtn: 'نموذج ملف .txt',
+    bankEmptySummary: 'اضغط على زر CNS Test أدناه لتحميل الأسئلة.',
+    sampleTxtBtn: 'اختبار CNS',
     exportBtn: 'تصدير البنك',
     clearBankBtn: 'مسح البنك',
     clearBankConfirm: 'هل أنت متأكد من مسح جميع الأسئلة من البنك؟',
@@ -707,8 +707,8 @@ export const translations: Record<Language, Translations> = {
     // Footer
     footerTagline: 'ساحة أسئلة متعددة الخيارات عشوائية مع صفارة إنذار فورية',
     footerFeature1: '30 ثانية لكل سؤال',
-    footerFeature2: 'الوضع الفاتح والداكن',
-    footerFeature3: 'رفع بنك أسئلة بصيغة .txt',
+    footerFeature2: 'كلية طب الأسنان (المرحلة الأولى)',
+    footerFeature3: 'اختبار الـ CNS (105 أسئلة)',
   },
 };
 
