@@ -218,6 +218,15 @@ export interface Translations {
   chartAttempt: string;
   chartNoDataYet: string;
 
+  // Mastery System
+  masteryBadgeTitle: string;
+  masteryLevelLabel: string;
+  masteryProgressLabel: string;
+  masteryCorrectCountLabel: string;
+  masterySessionsCountLabel: string;
+  masteryNotStartedDesc: string;
+  masteryMaxAchieved: string;
+
   // Footer
   footerTagline: string;
   footerFeature1: string;
@@ -462,6 +471,15 @@ export const translations: Record<Language, Translations> = {
     chartAttempt: 'Attempt',
     chartNoDataYet: 'Complete at least one quiz to view your historical performance chart.',
 
+    // Mastery System
+    masteryBadgeTitle: 'Mastery Level',
+    masteryLevelLabel: 'Mastery: Level {level} · {title}',
+    masteryProgressLabel: '{progress}% to Level {nextLevel}',
+    masteryCorrectCountLabel: '{correct} correct in previous sessions',
+    masterySessionsCountLabel: '{count} sessions played',
+    masteryNotStartedDesc: 'No previous attempts. Complete a quiz session to unlock mastery!',
+    masteryMaxAchieved: 'Highest Mastery Level Achieved!',
+
     // Footer
     footerTagline: 'Randomized MCQ Arena with Buzzer Feedback',
     footerFeature1: '30s Per Question',
@@ -703,6 +721,15 @@ export const translations: Record<Language, Translations> = {
     chartAttemptsCount: 'آخر {count} محاولات',
     chartAttempt: 'المحاولة',
     chartNoDataYet: 'أكمل جولة اختبار واحدة على الأقل لعرض الرسم البياني للأداء التاريخي.',
+
+    // Mastery System
+    masteryBadgeTitle: 'مستوى الإتقان',
+    masteryLevelLabel: 'الإتقان: مستوى {level} · {title}',
+    masteryProgressLabel: '{progress}% نحو المستوى {nextLevel}',
+    masteryCorrectCountLabel: '{correct} إجابة صحيحة في الجولات السابقة',
+    masterySessionsCountLabel: '{count} جولات سابقة',
+    masteryNotStartedDesc: 'لا توجد محاولات سابقة. أكمل جلسة اختبار لفتح مستوى الإتقان!',
+    masteryMaxAchieved: 'تم تحقيق أعلى مستوى إتقان!',
 
     // Footer
     footerTagline: 'ساحة أسئلة متعددة الخيارات عشوائية مع صفارة إنذار فورية',

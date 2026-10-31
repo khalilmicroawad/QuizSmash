@@ -38,6 +38,7 @@ interface QuizPlayViewProps {
   onOpenInstallModal?: () => void;
   onNavigateToSubjects?: () => void;
   activeSubjectName?: string;
+  activeSubjectId?: string;
 }
 
 export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
@@ -50,6 +51,7 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
   onOpenInstallModal,
   onNavigateToSubjects,
   activeSubjectName,
+  activeSubjectId,
 }) => {
   const { t, isRTL, language } = useLanguage();
 
@@ -170,6 +172,8 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
         difficultyTier: diff.tier,
         difficultyMultiplier: diff.multiplier,
         results,
+        subjectId: activeSubjectId || 'general-human-anatomy',
+        subjectName: activeSubjectName || 'General Human Anatomy',
       };
 
       StorageService.recordQuizAttempt(attempt);

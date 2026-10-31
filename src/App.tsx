@@ -115,6 +115,7 @@ function QuizSmashApp() {
                 }}
                 questions={questions}
                 onQuestionsUpdated={handleQuestionsUpdated}
+                activeProfile={activeProfile}
               />
             )}
 
@@ -129,6 +130,7 @@ function QuizSmashApp() {
                 onOpenInstallModal={() => setIsInstallModalOpen(true)}
                 onNavigateToSubjects={() => setCurrentTab('subjects')}
                 activeSubjectName={currentSubject?.nameEn}
+                activeSubjectId={currentSubject?.id}
               />
             )}
 

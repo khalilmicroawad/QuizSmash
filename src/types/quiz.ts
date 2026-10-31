@@ -43,6 +43,8 @@ export interface QuizAttempt {
   difficultyTier?: string;
   difficultyMultiplier?: number;
   results: QuestionResult[];
+  subjectId?: string;
+  subjectName?: string;
 }
 
 export interface UserProfile {

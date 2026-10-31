@@ -14,18 +14,28 @@ import {
   AlertCircle,
   Clock,
   Zap,
+  Award,
+  Medal,
+  Trophy,
+  Star,
+  Crown,
+  Target,
+  BarChart3,
 } from 'lucide-react';
 import { DentalSubject, DENTAL_FACULTY_SUBJECTS } from '../data/dentalSubjects';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
-import { Question } from '../types/quiz';
+import { Question, UserProfile } from '../types/quiz';
 import { fetchCnsTestQuestions } from '../services/cnsTestService';
+import { MasteryService, SubjectMasteryInfo } from '../services/masteryService';
+import { StorageService } from '../services/storageService';
 
 interface DentalFacultyHubProps {
   onSelectSubject: (subject: DentalSubject) => void;
   onLaunchQuiz: () => void;
   questions: Question[];
   onQuestionsUpdated: (questions: Question[]) => void;
+  activeProfile?: UserProfile;
 }
 
 export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
@@ -33,12 +43,29 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
   onLaunchQuiz,
   questions,
   onQuestionsUpdated,
+  activeProfile,
 }) => {
   const { isRTL } = useLanguage();
-  const { timeLeftFormatted, isTrialActive, isPermanent } = useAuth();
+  const { timeLeftFormatted, isTrialActive } = useAuth();
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('general-human-anatomy');
   const [isLoadingCns, setIsLoadingCns] = useState<boolean>(false);
   const [notice, setNotice] = useState<{ message: string; type: 'info' | 'success' } | null>(null);
+
+  // Fallback to active profile in storage if not passed
+  const currentProfile = activeProfile || StorageService.getActiveProfile();
+  const history = currentProfile?.history || [];
+
+  // Calculate mastery info for all 5 dental faculty subjects based on previous sessions
+  const subjectMasteryMap = MasteryService.getAllSubjectsMastery(
+    DENTAL_FACULTY_SUBJECTS.map((s) => s.id),
+    history
+  );
+
+  // Calculate total dental faculty correct answers across all previous sessions
+  const totalDentalCorrect = Object.values(subjectMasteryMap).reduce(
+    (acc, m) => acc + m.totalCorrect,
+    0
+  );
 
   const getSubjectIcon = (id: string) => {
     switch (id) {
@@ -54,6 +81,23 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
         return <Atom className="w-6 h-6 text-orange-500" />;
       default:
         return <BookOpen className="w-6 h-6 text-orange-500" />;
+    }
+  };
+
+  const getMasteryTierIcon = (level: number) => {
+    switch (level) {
+      case 5:
+        return <Crown className="w-4 h-4 text-amber-200 fill-amber-200" />;
+      case 4:
+        return <Trophy className="w-4 h-4 text-orange-600" />;
+      case 3:
+        return <Star className="w-4 h-4 text-amber-600 fill-amber-500" />;
+      case 2:
+        return <Medal className="w-4 h-4 text-sky-600" />;
+      case 1:
+        return <Award className="w-4 h-4 text-emerald-600" />;
+      default:
+        return <Target className="w-4 h-4 text-slate-400" />;
     }
   };
 
@@ -127,22 +171,38 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
 
             <p className="mt-2 text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
               {isRTL
-                ? 'اختر المادة الدراسية لبدء حل أسئلة الاختيار من متعدد (MCQ)، التدريب الذاتي، أو الاختبارات المؤقتة الخاصة بطلبة طب الأسنان.'
-                : 'Select a subject below to start multiple-choice questions (MCQ), self-paced practice, or timed exams for first-year dental students.'}
+                ? 'اختر المادة الدراسية لبدء حل أسئلة الاختيار من متعدد (MCQ)، تتبع مستوى الإتقان (Mastery Level) المكتسب من الجولات السابقة، والتدريب على الاختبارات.'
+                : 'Select a subject below to start multiple-choice questions (MCQ), track your Mastery Level earned from previous sessions, and train for dental faculty exams.'}
             </p>
           </div>
 
-          {/* Quick Start / Active Badge */}
-          <div className="flex items-center gap-3.5 bg-slate-50 p-4 rounded-2xl border border-slate-200 shadow-xs shrink-0">
-            <div className="text-right rtl:text-left">
-              <div className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
-                {isRTL ? 'الأسئلة النشطة' : 'Active MCQs'}
+          {/* Stats: Active MCQs & Total Correct Mastery */}
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            {/* Total Mastery Correct in Previous Sessions */}
+            <div className="flex items-center gap-3 bg-orange-50/70 p-3.5 rounded-2xl border border-orange-200 shadow-xs">
+              <div className="text-right rtl:text-left">
+                <div className="text-[10px] uppercase tracking-wider text-orange-800 font-bold">
+                  {isRTL ? 'إجمالي الإتقان' : 'Total Mastery'}
+                </div>
+                <div className="font-mono text-lg font-black text-orange-600">
+                  {totalDentalCorrect} <span className="text-xs font-semibold">{isRTL ? 'صحيحة' : 'Correct'}</span>
+                </div>
               </div>
-              <div className="font-mono text-xl font-extrabold text-orange-500">
-                {questions.length > 0 ? questions.length : 105}
-              </div>
+              <Trophy className="h-6 w-6 text-orange-500 shrink-0" />
             </div>
-            <Zap className="h-7 w-7 text-orange-500 shrink-0" />
+
+            {/* Active Questions */}
+            <div className="flex items-center gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+              <div className="text-right rtl:text-left">
+                <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+                  {isRTL ? 'الأسئلة النشطة' : 'Active MCQs'}
+                </div>
+                <div className="font-mono text-lg font-extrabold text-orange-500">
+                  {questions.length > 0 ? questions.length : 105}
+                </div>
+              </div>
+              <Zap className="h-6 w-6 text-orange-500 shrink-0" />
+            </div>
           </div>
         </div>
       </div>
@@ -177,21 +237,40 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
         </div>
       )}
 
-      {/* SECTION 2: SUBJECTS OF DENTAL FACULTIES (FIRST LEVEL) */}
+      {/* SECTION 2: SUBJECTS OF DENTAL FACULTIES (FIRST LEVEL) WITH MASTERY LEVEL BADGES */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
-            <span>{isRTL ? 'مواد المرحلة الأولى:' : 'First Level Subjects:'}</span>
+            <span>{isRTL ? 'مواد المرحلة الأولى مع شارة الإتقان (Mastery Level):' : 'First Level Subjects & Mastery Levels:'}</span>
           </h2>
           <span className="text-[11px] font-bold text-slate-400">
-            {isRTL ? 'اضغط على أي مادة للاختيار' : 'Click any subject to open'}
+            {isRTL ? 'مبنية على عدد الأسئلة المجابة صحيحة في الجلسات السابقة' : 'Based on questions answered correctly in previous sessions'}
           </span>
         </div>
 
         {/* The 5 Dental Faculty Subjects Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {DENTAL_FACULTY_SUBJECTS.map((subject, idx) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {DENTAL_FACULTY_SUBJECTS.map((subject) => {
             const isSelected = selectedSubjectId === subject.id;
+            const mastery: SubjectMasteryInfo = subjectMasteryMap[subject.id] || {
+              subjectId: subject.id,
+              level: 0,
+              titleEn: 'Novice',
+              titleAr: 'مبتدئ',
+              badgeLabelEn: 'Mastery Level 0 · Novice',
+              badgeLabelAr: 'مستوى الإتقان 0 · مبتدئ',
+              totalCorrect: 0,
+              totalAnswered: 0,
+              accuracyPercent: 0,
+              sessionsCount: 0,
+              minCorrect: 0,
+              nextTarget: 15,
+              progressPercent: 0,
+              badgeBg: 'bg-slate-50',
+              badgeBorder: 'border-slate-200',
+              badgeText: 'text-slate-600',
+              badgeIcon: 'seed',
+            };
 
             return (
               <div
@@ -203,15 +282,19 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
                 }`}
               >
                 <div>
+                  {/* Top card header with icon, code, and status */}
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="w-12 h-12 rounded-2xl bg-orange-50 border border-orange-200 flex items-center justify-center shrink-0">
                       {getSubjectIcon(subject.id)}
                     </div>
-                    <span className="px-2.5 py-1 rounded-xl text-[10px] font-mono font-bold bg-slate-100 border border-slate-200 text-slate-600">
-                      {subject.code}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-1 rounded-xl text-[10px] font-mono font-bold bg-slate-100 border border-slate-200 text-slate-600">
+                        {subject.code}
+                      </span>
+                    </div>
                   </div>
 
+                  {/* Subject Title */}
                   <h3 className="text-base font-extrabold text-slate-900 leading-snug">
                     {isRTL ? subject.nameAr : subject.nameEn}
                   </h3>
@@ -220,11 +303,12 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
                     {isRTL ? subject.nameEn : subject.nameAr}
                   </div>
 
-                  <p className="mt-2.5 text-xs text-slate-600 leading-relaxed min-h-[3.5rem]">
+                  <p className="mt-2 text-xs text-slate-600 leading-relaxed min-h-[3rem]">
                     {isRTL ? subject.descriptionAr : subject.descriptionEn}
                   </p>
 
-                  <div className="mt-3">
+                  {/* Status pill (Questions availability) */}
+                  <div className="mt-2.5">
                     <span
                       className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-bold border ${
                         subject.hasQuestions
@@ -235,6 +319,84 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
                       {subject.hasQuestions && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
                       <span>{isRTL ? subject.badgeAr : subject.badgeEn}</span>
                     </span>
+                  </div>
+
+                  {/* MASTERY LEVEL BADGE COMPONENT */}
+                  <div className="mt-4 pt-3.5 border-t border-slate-100">
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 flex items-center gap-1">
+                        <Award className="w-3.5 h-3.5 text-orange-500" />
+                        <span>{isRTL ? 'مستوى الإتقان' : 'Mastery Level'}</span>
+                      </span>
+                      <span className="text-[11px] font-extrabold font-mono text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200">
+                        {mastery.totalCorrect} {isRTL ? 'صحيحة' : 'Correct'}
+                      </span>
+                    </div>
+
+                    {/* Badge Seal with Tier & Level */}
+                    <div
+                      className={`flex items-center justify-between gap-2 px-3 py-2 rounded-xl border ${mastery.badgeBg} ${mastery.badgeBorder}`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="shrink-0">{getMasteryTierIcon(mastery.level)}</span>
+                        <div className="truncate">
+                          <div className={`text-xs font-black truncate ${mastery.badgeText}`}>
+                            {isRTL ? mastery.badgeLabelAr : mastery.badgeLabelEn}
+                          </div>
+                        </div>
+                      </div>
+                      <span
+                        className={`text-[10px] font-extrabold font-mono px-1.5 py-0.5 rounded-md border shrink-0 ${
+                          mastery.level === 5
+                            ? 'bg-white/20 border-white/40 text-white'
+                            : 'bg-white border-slate-200 text-slate-800'
+                        }`}
+                      >
+                        Lv.{mastery.level}
+                      </span>
+                    </div>
+
+                    {/* Progress Bar towards Next Mastery Milestone */}
+                    <div className="mt-2.5">
+                      <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 mb-1">
+                        <span>
+                          {mastery.nextTarget === null
+                            ? isRTL
+                              ? 'أعلى إتقان تم تحقيقه (105+)'
+                              : 'Max Mastery Level Achieved'
+                            : isRTL
+                            ? `${mastery.totalCorrect} / ${mastery.nextTarget} للمستوى ${mastery.level + 1}`
+                            : `${mastery.totalCorrect} / ${mastery.nextTarget} to Lv.${mastery.level + 1}`}
+                        </span>
+                        <span className="font-mono">{mastery.progressPercent}%</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-orange-400 to-amber-500 transition-all duration-500 rounded-full"
+                          style={{
+                            width: `${Math.max(mastery.totalCorrect > 0 ? 5 : 0, mastery.progressPercent)}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Previous sessions summary note */}
+                    <div className="mt-2 flex items-center justify-between text-[10px] font-semibold text-slate-400">
+                      <span>
+                        {mastery.sessionsCount > 0
+                          ? isRTL
+                            ? `${mastery.sessionsCount} جلسات سابقة`
+                            : `${mastery.sessionsCount} previous sessions`
+                          : isRTL
+                          ? 'لم تلعب جلسات سابقة'
+                          : 'No previous sessions'}
+                      </span>
+                      {mastery.sessionsCount > 0 && (
+                        <span className="text-emerald-600 font-bold">
+                          {mastery.accuracyPercent}% {isRTL ? 'دقة' : 'acc'}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -253,9 +415,7 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
                     ) : (
                       <BookOpen className="w-3.5 h-3.5" />
                     )}
-                    <span>
-                      {subject.nameEn}
-                    </span>
+                    <span>{subject.nameEn}</span>
                     {isRTL ? <ChevronLeft className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                   </button>
                 </div>
@@ -275,13 +435,24 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
             <Brain className="w-6 h-6" />
           </div>
           <div>
-            <h4 className="text-sm font-extrabold text-slate-900">
-              {isRTL ? 'اختبار الجهاز العصبي المركزي (CNS Test - 105 أسئلة)' : 'CNS Test (Central Nervous System - 105 MCQs)'}
-            </h4>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <div className="flex items-center gap-2 mb-0.5">
+              <h4 className="text-sm font-extrabold text-slate-900">
+                {isRTL ? 'اختبار الجهاز العصبي المركزي (CNS Test - 105 أسئلة)' : 'CNS Test (Central Nervous System - 105 MCQs)'}
+              </h4>
+              {subjectMasteryMap['general-human-anatomy'] && subjectMasteryMap['general-human-anatomy'].level > 0 && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md bg-orange-100 text-orange-700 border border-orange-200">
+                  <Award className="w-3 h-3 text-orange-500" />
+                  <span>
+                    Lv.{subjectMasteryMap['general-human-anatomy'].level} (
+                    {subjectMasteryMap['general-human-anatomy'].totalCorrect} {isRTL ? 'صحيحة' : 'correct'})
+                  </span>
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-500">
               {isRTL
-                ? 'مرتبط بمادة التشريح البشري العام ومتاح للبدء الفوري.'
-                : 'Linked to General Human Anatomy and ready for instant practice or exam.'}
+                ? 'مرتبط بمادة التشريح البشري العام ومتاح للبدء الفوري لاختبار معلوماتك ورفع شارة الإتقان.'
+                : 'Linked to General Human Anatomy and ready for instant practice or exam to boost your Mastery Level.'}
             </p>
           </div>
         </div>
@@ -292,7 +463,7 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
             const anat = DENTAL_FACULTY_SUBJECTS.find((s) => s.id === 'general-human-anatomy');
             if (anat) handleSubjectClick(anat);
           }}
-          className="w-full sm:w-auto px-7 py-3 rounded-2xl text-xs font-black btn-glossy-orange flex items-center justify-center gap-2 cursor-pointer shadow-md"
+          className="w-full sm:w-auto px-7 py-3 rounded-2xl text-xs font-black btn-glossy-orange flex items-center justify-center gap-2 cursor-pointer shadow-md shrink-0"
         >
           <Play className="w-3.5 h-3.5 fill-white" />
           <span>{isRTL ? 'بدء اختبار الـ CNS الآن' : 'Start CNS Test Now'}</span>
