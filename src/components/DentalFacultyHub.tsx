@@ -46,7 +46,7 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
   activeProfile,
 }) => {
   const { isRTL } = useLanguage();
-  const { timeLeftFormatted, isTrialActive } = useAuth();
+  const { timeLeftFormatted, isTrialActive, usedLogins, maxLogins, remainingLogins } = useAuth();
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('general-human-anatomy');
   const [isLoadingCns, setIsLoadingCns] = useState<boolean>(false);
   const [notice, setNotice] = useState<{ message: string; type: 'info' | 'success' } | null>(null);
@@ -159,7 +159,7 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
                   <span className="text-slate-300">·</span>
                   <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
                     <Clock className="w-3 h-3" />
-                    <span>{isRTL ? `تجربة مجانية: ${timeLeftFormatted}` : `24h Trial: ${timeLeftFormatted}`}</span>
+                    <span>{isRTL ? `تجربة مجانية: ${timeLeftFormatted}` : `2-Day Trial: ${timeLeftFormatted}`}</span>
                   </span>
                 </>
               )}
@@ -176,16 +176,32 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
             </p>
           </div>
 
-          {/* Stats: Active MCQs & Total Correct Mastery */}
+          {/* Stats: Service Usage Counter, Active MCQs & Total Correct Mastery */}
           <div className="flex flex-wrap items-center gap-3 shrink-0">
-            {/* Total Mastery Correct in Previous Sessions */}
+            {/* Service Usage Counter */}
             <div className="flex items-center gap-3 bg-orange-50/70 p-3.5 rounded-2xl border border-orange-200 shadow-xs">
               <div className="text-right rtl:text-left">
                 <div className="text-[10px] uppercase tracking-wider text-orange-800 font-bold">
-                  {isRTL ? 'إجمالي الإتقان' : 'Total Mastery'}
+                  {isRTL ? 'استخدام الخدمة' : 'Service Usage'}
                 </div>
                 <div className="font-mono text-lg font-black text-orange-600">
-                  {totalDentalCorrect} <span className="text-xs font-semibold">{isRTL ? 'صحيحة' : 'Correct'}</span>
+                  {usedLogins} / {maxLogins}
+                </div>
+                <div className="text-[10px] text-slate-500 font-semibold">
+                  {isRTL ? `${remainingLogins} متبقي · دخول يومي` : `${remainingLogins} left · Daily Login`}
+                </div>
+              </div>
+              <Zap className="h-6 w-6 text-orange-500 fill-orange-500 shrink-0" />
+            </div>
+
+            {/* Total Mastery Correct in Previous Sessions */}
+            <div className="flex items-center gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+              <div className="text-right rtl:text-left">
+                <div className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">
+                  {isRTL ? 'إجمالي الإتقان' : 'Total Mastery'}
+                </div>
+                <div className="font-mono text-lg font-black text-slate-900">
+                  {totalDentalCorrect} <span className="text-xs font-semibold text-slate-500">{isRTL ? 'صحيحة' : 'Correct'}</span>
                 </div>
               </div>
               <Trophy className="h-6 w-6 text-orange-500 shrink-0" />
@@ -201,7 +217,7 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
                   {questions.length > 0 ? questions.length : 105}
                 </div>
               </div>
-              <Zap className="h-6 w-6 text-orange-500 shrink-0" />
+              <Sparkles className="h-6 w-6 text-orange-500 shrink-0" />
             </div>
           </div>
         </div>

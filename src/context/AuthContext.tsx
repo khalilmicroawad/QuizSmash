@@ -5,46 +5,78 @@ import { supabase } from '../supabaseClient.js';
 export interface AccessState {
   isUnlocked: boolean;
   isPermanent: boolean;
+  hasSubscription: boolean;
   firstActivatedAt: number | null;
   trialExpiresAt: number | null;
   lastCodeUsed?: string;
+  maxLogins: number; // 100 logins
+  usedLogins: number; // Counter of times user used service
+  lastLoginDateString?: string; // YYYY-MM-DD
+  lastLoginTimestamp?: number;
 }
 
 interface AuthContextType {
   user: User | null;
   isUnlocked: boolean;
   isPermanent: boolean;
+  hasSubscription: boolean;
   isTrialActive: boolean;
   trialExpiresAt: number | null;
   timeLeftFormatted: string;
   secondsRemaining: number;
+  maxLogins: number;
+  usedLogins: number;
+  remainingLogins: number;
+  dailyLoginExpiredNotice: boolean;
+  dismissDailyNotice: () => void;
   ownerWhatsApp: string;
   isLoading: boolean;
-  submitAccessCode: (code: string) => { success: boolean; type: 'trial' | 'permanent' | 'invalid'; message: string };
-  activate24HourTrial: (code?: string) => void;
-  unlockPermanent: (code?: string) => void;
+  submitAccessCode: (code: string) => { success: boolean; type: 'trial' | 'subscription' | 'invalid'; message: string };
+  activate2DayTrial: (code?: string) => void;
+  activate24HourTrial: (code?: string) => void; // Backward compatibility alias
+  unlockSubscription100: (code?: string) => void;
+  unlockPermanent: (code?: string) => void; // Backward compatibility alias
   setOwnerWhatsApp: (phone: string) => void;
   lockApp: () => void;
   signOutUser: () => Promise<void>;
   testFastForwardExpired: () => void;
   testResetTrial: () => void;
+  testSimulateNewDay: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const LOCAL_ACCESS_PREFIX = 'quiz_smash_user_access_v5_';
-const LOCAL_WHATSAPP_KEY = 'quiz_smash_owner_whatsapp_v5';
+const LOCAL_ACCESS_PREFIX = 'quiz_smash_user_access_v6_';
+const LOCAL_WHATSAPP_KEY = 'quiz_smash_owner_whatsapp_v6';
 
 // Default owner WhatsApp number (can be edited in app by owner)
 export const DEFAULT_WHATSAPP_NUMBER = '9647700000000';
 export const PRICE_IQD = '20,000 IQD';
+export const MAX_SUBSCRIPTION_LOGINS = 100;
 
-const DURATION_24_HOURS_MS = 24 * 60 * 60 * 1000;
+// 2 Days = 48 Hours
+export const DURATION_48_HOURS_MS = 2 * 24 * 60 * 60 * 1000;
 
 // Accepted codes list
-const TRIAL_CODES = ['TRIAL', 'TRIAL24', 'FREE', 'FREE24', 'START', 'TEST24', '24H', '24HOUR'];
+const TRIAL_CODES = [
+  'TRIAL',
+  'TRIAL48',
+  'FREE',
+  'FREE48',
+  'START',
+  'TEST48',
+  '2DAY',
+  '2DAYS',
+  '48H',
+  '48HOUR',
+  'TRIAL24',
+  'FREE24',
+];
 
-const UNLIMITED_CODES = [
+const SUBSCRIPTION_CODES = [
+  '100',
+  '100LOGINS',
+  'SUB100',
   '20000',
   '20000IQD',
   '20K',
@@ -58,15 +90,27 @@ const UNLIMITED_CODES = [
   'DRKHALIL',
 ];
 
+const getTodayDateString = (): string => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [dailyLoginExpiredNotice, setDailyLoginExpiredNotice] = useState<boolean>(false);
 
   const [access, setAccess] = useState<AccessState>({
     isUnlocked: false,
     isPermanent: false,
+    hasSubscription: false,
     firstActivatedAt: null,
     trialExpiresAt: null,
+    maxLogins: MAX_SUBSCRIPTION_LOGINS,
+    usedLogins: 0,
   });
 
   const [ownerWhatsApp, setOwnerWhatsAppState] = useState<string>(() => {
@@ -86,7 +130,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const stored = localStorage.getItem(`${LOCAL_ACCESS_PREFIX}${userId}`);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        return {
+          maxLogins: MAX_SUBSCRIPTION_LOGINS,
+          usedLogins: 0,
+          hasSubscription: false,
+          ...parsed,
+        };
       }
     } catch {
       // Ignore
@@ -94,8 +144,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return {
       isUnlocked: false,
       isPermanent: false,
+      hasSubscription: false,
       firstActivatedAt: null,
       trialExpiresAt: null,
+      maxLogins: MAX_SUBSCRIPTION_LOGINS,
+      usedLogins: 0,
     };
   };
 
@@ -111,17 +164,72 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Initialize Supabase Auth Session
+  // Record a daily login session usage for 100-login subscription counter
+  const recordDailyLoginUsage = (currentAccess: AccessState, userId: string): AccessState => {
+    const today = getTodayDateString();
+    const sessionKey = `quiz_smash_session_day_${userId}`;
+    const storedSessionDay = sessionStorage.getItem(sessionKey);
+
+    // If it's a new day or session hasn't been recorded yet for today
+    if (currentAccess.lastLoginDateString !== today || storedSessionDay !== today) {
+      const nextUsed = (currentAccess.usedLogins || 0) + 1;
+      const isExhausted = currentAccess.hasSubscription && nextUsed > currentAccess.maxLogins;
+
+      const updated: AccessState = {
+        ...currentAccess,
+        usedLogins: nextUsed,
+        lastLoginDateString: today,
+        lastLoginTimestamp: Date.now(),
+        // If 100 logins reached, subscription is exhausted
+        isUnlocked: isExhausted ? false : currentAccess.isUnlocked,
+      };
+
+      sessionStorage.setItem(sessionKey, today);
+      try {
+        localStorage.setItem(`${LOCAL_ACCESS_PREFIX}${userId}`, JSON.stringify(updated));
+      } catch {
+        // Ignore
+      }
+      return updated;
+    }
+    return currentAccess;
+  };
+
+  // Initialize Supabase Auth Session and enforce daily login
   useEffect(() => {
     let isMounted = true;
 
-    // Protect private pages with supabase.auth.getSession() — if no session, redirect to /login
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!isMounted) return;
       if (session?.user) {
-        setUser(session.user);
+        const today = getTodayDateString();
         const userAccess = loadUserAccess(session.user.id);
-        setAccess(userAccess);
+        const sessionKey = `quiz_smash_session_day_${session.user.id}`;
+        const storedSessionDay = sessionStorage.getItem(sessionKey);
+
+        // REQUIREMENT: Everyday the site will force the user to login again!
+        // If user logged in on a previous day and hasn't logged in today, force logout!
+        if (userAccess.lastLoginDateString && userAccess.lastLoginDateString !== today && storedSessionDay !== today) {
+          try {
+            await supabase.auth.signOut();
+          } catch {
+            // Ignore
+          }
+          if (!isMounted) return;
+          setUser(null);
+          setDailyLoginExpiredNotice(true);
+          if (window.location.pathname !== '/login') {
+            window.history.replaceState({}, '', '/login');
+          }
+          setIsLoading(false);
+          return;
+        }
+
+        // Active valid session for today: record login usage and update state
+        const updated = recordDailyLoginUsage(userAccess, session.user.id);
+        setUser(session.user);
+        setAccess(updated);
+
         if (window.location.pathname === '/login') {
           window.history.replaceState({}, '', '/');
         }
@@ -142,13 +250,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
-    // Listen for auth state changes (sign in, sign out, token refresh)
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+    // Listen for auth state changes
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!isMounted) return;
       if (session?.user) {
-        setUser(session.user);
         const userAccess = loadUserAccess(session.user.id);
-        setAccess(userAccess);
+        const updated = recordDailyLoginUsage(userAccess, session.user.id);
+        setUser(session.user);
+        setAccess(updated);
+        setDailyLoginExpiredNotice(false);
+
         if (window.location.pathname === '/login') {
           window.history.replaceState({}, '', '/');
         }
@@ -157,8 +268,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setAccess({
           isUnlocked: false,
           isPermanent: false,
+          hasSubscription: false,
           firstActivatedAt: null,
           trialExpiresAt: null,
+          maxLogins: MAX_SUBSCRIPTION_LOGINS,
+          usedLogins: 0,
         });
         if (window.location.pathname !== '/login') {
           window.history.replaceState({}, '', '/login');
@@ -183,9 +297,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // 1-second countdown loop
+  // 1-second countdown loop for trial
   useEffect(() => {
-    if (access.isPermanent) {
+    if (access.isPermanent || access.hasSubscription) {
       setSecondsRemaining(999999);
       return;
     }
@@ -202,7 +316,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSecondsRemaining(secs);
 
       // If expired, ensure unlocked is updated
-      if (secs <= 0 && access.isUnlocked && !access.isPermanent) {
+      if (secs <= 0 && access.isUnlocked && !access.isPermanent && !access.hasSubscription) {
         saveAccess({
           ...access,
           isUnlocked: false,
@@ -215,102 +329,171 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => clearInterval(interval);
   }, [access, user]);
 
-  const isPermanent = Boolean(access.isPermanent);
+  const hasSubscription = Boolean(access.hasSubscription);
+  const isPermanent = Boolean(access.isPermanent || access.hasSubscription);
   const isTrialActive = Boolean(!isPermanent && access.trialExpiresAt && secondsRemaining > 0);
-  const isUnlocked = isPermanent || isTrialActive;
+  const isLoginsExhausted = hasSubscription && access.usedLogins > access.maxLogins;
+  const isUnlocked = (isPermanent || isTrialActive) && !isLoginsExhausted;
 
-  // Format remaining time: "23h 45m" or "12m 30s"
+  // Format remaining time: "2d 0h", "1d 18h", "23h 45m" or "12m 30s"
   const formatTimeLeft = (totalSeconds: number): string => {
-    if (isPermanent) return 'Unlimited';
+    if (isPermanent) return 'Subscription Active';
     if (totalSeconds <= 0) return 'Expired';
-    const hours = Math.floor(totalSeconds / 3600);
+
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
 
+    if (days > 0) {
+      return `${days}d ${hours}h`;
+    }
     if (hours > 0) {
       return `${hours}h ${minutes}m`;
     }
     return `${minutes}m ${seconds}s`;
   };
 
-  // Submit code logic
+  // Submit code logic (Supports 100-login subscription & 2-day trial)
   const submitAccessCode = (rawCode: string) => {
     const code = rawCode.trim().toUpperCase();
     const now = Date.now();
+    const today = getTodayDateString();
 
-    // Check Unlimited VIP Codes (20,000 IQD)
-    if (UNLIMITED_CODES.includes(code) || code.startsWith('VIP-') || code.startsWith('PAID-')) {
+    // Check 100-Login Subscription Codes
+    if (
+      SUBSCRIPTION_CODES.includes(code) ||
+      code.startsWith('SUB-') ||
+      code.startsWith('VIP-') ||
+      code.startsWith('PAID-') ||
+      code.startsWith('CODE100-')
+    ) {
+      const currentUsed = access.usedLogins > 0 ? access.usedLogins : 1;
       const newState: AccessState = {
         isUnlocked: true,
         isPermanent: true,
+        hasSubscription: true,
         firstActivatedAt: access.firstActivatedAt || now,
         trialExpiresAt: null,
         lastCodeUsed: code,
+        maxLogins: MAX_SUBSCRIPTION_LOGINS,
+        usedLogins: currentUsed,
+        lastLoginDateString: today,
+        lastLoginTimestamp: now,
       };
+
+      if (user?.id) {
+        sessionStorage.setItem(`quiz_smash_session_day_${user.id}`, today);
+      }
       saveAccess(newState);
+
       return {
         success: true,
-        type: 'permanent' as const,
-        message: 'تم تفعيل الوصول غير المحدود بنجاح! شكراً لك.',
+        type: 'subscription' as const,
+        message: 'تم تفعيل كود الاشتراك (100 تسجيل دخول) بنجاح! شكراً لك.',
       };
     }
 
-    // Check 24-Hour Trial Codes
+    // Check 2-Day (48-Hour) Free Trial Codes
     if (TRIAL_CODES.includes(code) || code.startsWith('TRIAL-') || code.startsWith('FREE-')) {
       const newState: AccessState = {
         isUnlocked: true,
         isPermanent: false,
+        hasSubscription: false,
         firstActivatedAt: access.firstActivatedAt || now,
-        trialExpiresAt: now + DURATION_24_HOURS_MS,
+        trialExpiresAt: now + DURATION_48_HOURS_MS,
         lastCodeUsed: code,
+        maxLogins: MAX_SUBSCRIPTION_LOGINS,
+        usedLogins: Math.max(1, access.usedLogins),
+        lastLoginDateString: today,
+        lastLoginTimestamp: now,
       };
+
+      if (user?.id) {
+        sessionStorage.setItem(`quiz_smash_session_day_${user.id}`, today);
+      }
       saveAccess(newState);
+
       return {
         success: true,
         type: 'trial' as const,
-        message: 'تم تفعيل التجربة المجانية لمدة 24 ساعة بنجاح!',
+        message: 'تم تفعيل التجربة المجانية لمدة يومين (48 ساعة) بنجاح!',
       };
     }
 
     return {
       success: false,
       type: 'invalid' as const,
-      message: 'الكود غير صحيح. يرجى التأكد من الكود أو التواصل عبر واتساب للحصول على الكود.',
+      message: 'الكود غير صحيح. يرجى التأكد من الكود أو التواصل عبر واتساب للحصول على كود اشتراك 100 تسجيل دخول.',
     };
   };
 
-  const activate24HourTrial = (code = 'FREE_TRIAL') => {
+  const activate2DayTrial = (code = 'FREE_TRIAL_2DAYS') => {
     const now = Date.now();
-    saveAccess({
+    const today = getTodayDateString();
+    const newState: AccessState = {
       isUnlocked: true,
       isPermanent: false,
+      hasSubscription: false,
       firstActivatedAt: now,
-      trialExpiresAt: now + DURATION_24_HOURS_MS,
+      trialExpiresAt: now + DURATION_48_HOURS_MS,
       lastCodeUsed: code,
-    });
+      maxLogins: MAX_SUBSCRIPTION_LOGINS,
+      usedLogins: Math.max(1, access.usedLogins),
+      lastLoginDateString: today,
+      lastLoginTimestamp: now,
+    };
+    if (user?.id) {
+      sessionStorage.setItem(`quiz_smash_session_day_${user.id}`, today);
+    }
+    saveAccess(newState);
   };
 
-  const unlockPermanent = (code = 'PAID_20000IQD') => {
-    saveAccess({
+  // Backward compatibility alias
+  const activate24HourTrial = (code?: string) => {
+    activate2DayTrial(code);
+  };
+
+  const unlockSubscription100 = (code = 'SUB_100_LOGINS') => {
+    const now = Date.now();
+    const today = getTodayDateString();
+    const newState: AccessState = {
       isUnlocked: true,
       isPermanent: true,
-      firstActivatedAt: access.firstActivatedAt || Date.now(),
+      hasSubscription: true,
+      firstActivatedAt: access.firstActivatedAt || now,
       trialExpiresAt: null,
       lastCodeUsed: code,
-    });
+      maxLogins: MAX_SUBSCRIPTION_LOGINS,
+      usedLogins: Math.max(1, access.usedLogins),
+      lastLoginDateString: today,
+      lastLoginTimestamp: now,
+    };
+    if (user?.id) {
+      sessionStorage.setItem(`quiz_smash_session_day_${user.id}`, today);
+    }
+    saveAccess(newState);
+  };
+
+  const unlockPermanent = (code?: string) => {
+    unlockSubscription100(code);
   };
 
   const lockApp = () => {
     saveAccess({
+      ...access,
       isUnlocked: false,
       isPermanent: false,
-      firstActivatedAt: access.firstActivatedAt,
+      hasSubscription: false,
       trialExpiresAt: 0,
     });
   };
 
   const signOutUser = async () => {
     try {
+      if (user?.id) {
+        sessionStorage.removeItem(`quiz_smash_session_day_${user.id}`);
+      }
       await supabase.auth.signOut();
     } catch {
       // Ignore
@@ -321,18 +504,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const dismissDailyNotice = () => {
+    setDailyLoginExpiredNotice(false);
+  };
+
   const testFastForwardExpired = () => {
     saveAccess({
       ...access,
       isUnlocked: false,
       isPermanent: false,
+      hasSubscription: false,
       trialExpiresAt: Date.now() - 1000,
     });
   };
 
   const testResetTrial = () => {
-    activate24HourTrial('TEST_RESET');
+    activate2DayTrial('TEST_RESET');
   };
+
+  // Test helper: simulate that yesterday's date was last login, triggering tomorrow's forced login check
+  const testSimulateNewDay = () => {
+    if (!user) return;
+    const yesterday = new Date(Date.now() - 86400000);
+    const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+    const modified: AccessState = {
+      ...access,
+      lastLoginDateString: yesterdayStr,
+    };
+    sessionStorage.removeItem(`quiz_smash_session_day_${user.id}`);
+    saveAccess(modified);
+    signOutUser();
+    setDailyLoginExpiredNotice(true);
+  };
+
+  const usedLogins = access.usedLogins || 0;
+  const maxLogins = access.maxLogins || MAX_SUBSCRIPTION_LOGINS;
+  const remainingLogins = Math.max(0, maxLogins - usedLogins);
 
   return (
     <AuthContext.Provider
@@ -340,20 +547,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         isUnlocked,
         isPermanent,
+        hasSubscription,
         isTrialActive,
         trialExpiresAt: access.trialExpiresAt,
         timeLeftFormatted: formatTimeLeft(secondsRemaining),
         secondsRemaining,
+        maxLogins,
+        usedLogins,
+        remainingLogins,
+        dailyLoginExpiredNotice,
+        dismissDailyNotice,
         ownerWhatsApp,
         isLoading,
         submitAccessCode,
+        activate2DayTrial,
         activate24HourTrial,
+        unlockSubscription100,
         unlockPermanent,
         setOwnerWhatsApp,
         lockApp,
         signOutUser,
         testFastForwardExpired,
         testResetTrial,
+        testSimulateNewDay,
       }}
     >
       {children}

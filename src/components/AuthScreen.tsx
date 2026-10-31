@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Sparkles, ArrowRight, ArrowLeft, Check, ShieldCheck, Zap } from 'lucide-react';
+import { Mail, Lock, Sparkles, ArrowRight, ArrowLeft, Check, ShieldCheck, Zap, Calendar, AlertCircle } from 'lucide-react';
 import { supabase } from '../supabaseClient.js';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 
 export const AuthScreen: React.FC = () => {
-  const { isRTL, language } = useLanguage();
+  const { isRTL } = useLanguage();
+  const { dailyLoginExpiredNotice, dismissDailyNotice } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -58,6 +60,9 @@ export const AuthScreen: React.FC = () => {
           );
         } else {
           // A real session exists after login
+          if (dailyLoginExpiredNotice) {
+            dismissDailyNotice();
+          }
           if (window.location.pathname === '/login') {
             window.location.href = '/';
           }
@@ -98,30 +103,23 @@ export const AuthScreen: React.FC = () => {
     }
   };
 
-  // Google / Gmail OAuth One-Click Sign In
-  const handleGoogleSignIn = async () => {
-    setErrorMessage('');
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin,
-        },
-      });
-      if (error) {
-        setErrorMessage(error.message);
-      }
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Google sign-in error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-white">
       <div className="w-full max-w-md mx-auto bg-white border-2 border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xl relative text-slate-900">
+        {/* Daily Forced Re-login Notice */}
+        {dailyLoginExpiredNotice && (
+          <div className="mb-4 p-3.5 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-900 text-xs font-bold leading-relaxed flex items-start gap-2.5">
+            <Calendar className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p>
+                {isRTL
+                  ? 'بدأ يوم جديد! يتطلب النظام تسجيل الدخول يومياً لتجديد جلستك وتتبع رصيد الاستخدام (100 تسجيل دخول).'
+                  : 'A new day has started! Daily login is required to verify your 100-login subscription. Please sign in to continue.'}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* SECTION 1: BRAND HEADER */}
         <div className="text-center">
           <div className="mx-auto w-16 h-16 rounded-2xl btn-glossy-orange flex items-center justify-center shadow-md mb-3 text-white">
@@ -142,8 +140,8 @@ export const AuthScreen: React.FC = () => {
           </h1>
           <p className="mt-1 text-xs text-slate-600 max-w-xs mx-auto">
             {isRTL
-              ? 'سجّل الدخول بحساب Gmail الخاص بك أولاً للوصول إلى التجربة المجانية 24 ساعة والدفع.'
-              : 'Sign in with your Gmail account first to access the 24-hour trial and full features.'}
+              ? 'سجّل الدخول بحسابك للوصول إلى التجربة المجانية لمدة يومين (48 ساعة) أو تفعيل اشتراك 100 تسجيل دخول.'
+              : 'Sign in with your email to access the 2-day free trial or activate your 100-login subscription.'}
           </p>
         </div>
 
@@ -185,48 +183,7 @@ export const AuthScreen: React.FC = () => {
           </button>
         </div>
 
-        {/* LINE SEPARATING MODE SWITCHER FROM GOOGLE SIGN IN */}
-        <div className="w-full border-b-2 border-slate-200 my-5" />
-
-        {/* SECTION 3: ONE-CLICK GOOGLE / GMAIL SIGN IN */}
-        <div>
-          <button
-            type="button"
-            onClick={handleGoogleSignIn}
-            disabled={loading}
-            className="w-full py-3 px-4 rounded-2xl btn-glossy-orange-outline font-extrabold text-xs flex items-center justify-center gap-3 cursor-pointer"
-          >
-            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-              <path
-                fill="#4285F4"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-              />
-            </svg>
-            <span>
-              {mode === 'signin'
-                ? isRTL
-                  ? 'متابعة سريعة بحساب Google'
-                  : 'Continue with Google'
-                : isRTL
-                ? 'إنشاء الحساب عبر Google'
-                : 'Sign up with Google'}
-            </span>
-          </button>
-        </div>
-
-        {/* LINE SEPARATING GOOGLE FROM EMAIL/PASSWORD SECTION */}
+        {/* LINE SEPARATING MODE SWITCHER FROM FORM */}
         <div className="w-full border-b-2 border-slate-200 my-5" />
 
         {/* Success Message above the form */}
@@ -237,11 +194,11 @@ export const AuthScreen: React.FC = () => {
           </div>
         )}
 
-        {/* SECTION 4: EMAIL & PASSWORD FORM */}
+        {/* SECTION 3: EMAIL & PASSWORD FORM */}
         <form onSubmit={handleAuthSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-extrabold text-slate-700 mb-1.5 text-left rtl:text-right">
-              {isRTL ? 'حساب Gmail / البريد الإلكتروني:' : 'Gmail / Email Address:'}
+              {isRTL ? 'البريد الإلكتروني:' : 'Email Address:'}
             </label>
             <div className="relative">
               <Mail className="w-4 h-4 text-slate-400 absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2" />
@@ -250,7 +207,7 @@ export const AuthScreen: React.FC = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="yourname@gmail.com"
+                placeholder="name@example.com"
                 className="w-full pl-9 pr-3 rtl:pl-3 rtl:pr-9 py-2.5 text-sm rounded-2xl border-2 border-slate-200 bg-white text-slate-900 focus:outline-none focus:border-orange-500 font-mono"
               />
             </div>
@@ -314,7 +271,7 @@ export const AuthScreen: React.FC = () => {
             {isRTL ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
           </button>
 
-          {/* Simple Error Handling Message Under Form */}
+          {/* Error Message */}
           {errorMessage && (
             <div className="p-3.5 rounded-2xl bg-rose-50 border-2 border-rose-300 text-rose-700 text-xs font-bold text-center">
               {errorMessage}
@@ -330,8 +287,8 @@ export const AuthScreen: React.FC = () => {
           <ShieldCheck className="w-3.5 h-3.5 inline mr-1 text-sky-600" />
           <span>
             {isRTL
-              ? 'بعد الدخول ستظهر لك شاشة تفعيل التجربة المجانية 24 ساعة أو كود الـ 20,000 دينار.'
-              : 'After signing in, you will be directed to the 24-hour trial & 20,000 IQD unlock page.'}
+              ? 'بعد الدخول ستظهر لك شاشة تفعيل التجربة المجانية لمدة يومين (48 ساعة) أو كود اشتراك 100 تسجيل دخول.'
+              : 'After signing in, you will be directed to the 2-day free trial and 100-login subscription page.'}
           </span>
         </div>
       </div>

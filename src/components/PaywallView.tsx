@@ -1,10 +1,18 @@
 import React, { useState } from 'react';
-import { Lock, MessageCircle, KeyRound, Check, Settings } from 'lucide-react';
-import { useAuth, PRICE_IQD } from '../context/AuthContext';
+import { Lock, MessageCircle, KeyRound, Check, Settings, Zap } from 'lucide-react';
+import { useAuth, PRICE_IQD, MAX_SUBSCRIPTION_LOGINS } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 
 export const PaywallView: React.FC = () => {
-  const { submitAccessCode, ownerWhatsApp, setOwnerWhatsApp } = useAuth();
+  const {
+    submitAccessCode,
+    ownerWhatsApp,
+    setOwnerWhatsApp,
+    usedLogins,
+    maxLogins,
+    remainingLogins,
+    hasSubscription,
+  } = useAuth();
   const { isRTL } = useLanguage();
 
   const [inputCode, setInputCode] = useState('');
@@ -19,7 +27,7 @@ export const PaywallView: React.FC = () => {
     setSuccessMessage('');
 
     if (!inputCode.trim()) {
-      setErrorMessage(isRTL ? 'يرجى إدخال الكود المستلم عبر واتساب.' : 'Please enter your code.');
+      setErrorMessage(isRTL ? 'يرجى إدخال كود الاشتراك المستلم عبر واتساب.' : 'Please enter your subscription code.');
       return;
     }
 
@@ -37,10 +45,12 @@ export const PaywallView: React.FC = () => {
     setShowSettings(false);
   };
 
+  const isLoginsDepleted = hasSubscription && usedLogins >= maxLogins;
+
   const whatsappMessage = encodeURIComponent(
     isRTL
-      ? 'مرحباً، لقد انتهت الفترة التجريبية (24 ساعة) لتطبيق كويز سماش. أود دفع 20,000 دينار عراقي للحصول على كود التفعيل للوصول غير المحدود.'
-      : 'Hello, my 24-hour trial for Quiz Smash has expired. I would like to pay 20,000 IQD to get the activation code for unlimited access.'
+      ? `مرحباً، أود الحصول على كود اشتراك كويز سماش (100 تسجيل دخول) مقابل ${PRICE_IQD}. ما هي طريقة الدفع؟`
+      : `Hello, I would like to get a 100-login subscription code for Quiz Smash (${PRICE_IQD}). What is the payment method?`
   );
 
   const whatsappUrl = `https://wa.me/${ownerWhatsApp}?text=${whatsappMessage}`;
@@ -55,13 +65,36 @@ export const PaywallView: React.FC = () => {
           </div>
 
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            {isRTL ? 'انتهت الفترة التجريبية' : 'Free Trial Expired'}
+            {isLoginsDepleted
+              ? isRTL
+                ? 'تم استهلاك رصيد تسجيل الدخول'
+                : '100 Logins Limit Reached'
+              : isRTL
+              ? 'انتهت الفترة التجريبية (يومان)'
+              : '2-Day Free Trial Expired'}
           </h2>
           <p className="mt-1.5 text-xs text-slate-600 max-w-xs mx-auto leading-relaxed">
-            {isRTL
-              ? `للوصول غير المحدود الدائم، يرجى دفع ${PRICE_IQD} والتواصل عبر واتساب لاستلام كود التفعيل.`
-              : `For unlimited lifetime access, pay ${PRICE_IQD} via WhatsApp to receive your code.`}
+            {isLoginsDepleted
+              ? isRTL
+                ? `لقد استخدمت جميع مرات تسجيل الدخول المتاحة (${maxLogins} مرة). يرجى تجديد الاشتراك بـ ${PRICE_IQD}.`
+                : `You have reached your 100 logins limit. Please renew your subscription for ${PRICE_IQD}.`
+              : isRTL
+              ? `للاستمرار في استخدام المنصة، يرجى تفعيل اشتراك 100 تسجيل دخول مقابل ${PRICE_IQD}.`
+              : `To continue using the platform, activate a 100-login subscription for ${PRICE_IQD}.`}
           </p>
+        </div>
+
+        {/* SERVICE USAGE COUNTER */}
+        <div className="mt-4 p-3 rounded-2xl bg-orange-50 border border-orange-200 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Zap className="w-4 h-4 text-orange-500 fill-orange-500" />
+            <span className="text-xs font-bold text-orange-950">
+              {isRTL ? 'مرات استخدام الخدمة:' : 'Service Logins Used:'}
+            </span>
+          </div>
+          <span className="font-mono text-xs font-black text-orange-600 bg-white px-2.5 py-1 rounded-xl border border-orange-200">
+            {usedLogins} / {maxLogins}
+          </span>
         </div>
 
         {/* LINE SEPARATING HEADER FROM WHATSAPP SECTION */}
@@ -77,7 +110,9 @@ export const PaywallView: React.FC = () => {
           >
             <MessageCircle className="w-5 h-5 fill-white" />
             <span>
-              {isRTL ? `طلب كود التفعيل عبر واتساب (${PRICE_IQD})` : `Get Code via WhatsApp (${PRICE_IQD})`}
+              {isRTL
+                ? `طلب كود الاشتراك عبر واتساب (${PRICE_IQD} - 100 دخول)`
+                : `Get 100-Login Code (${PRICE_IQD})`}
             </span>
           </a>
         </div>
@@ -88,7 +123,7 @@ export const PaywallView: React.FC = () => {
         {/* SECTION 3: CODE ENTRY FORM */}
         <div>
           <div className="text-xs uppercase tracking-wider font-extrabold text-slate-500 mb-3">
-            {isRTL ? 'هل لديك كود تفعيل؟' : 'Have an activation code?'}
+            {isRTL ? 'هل لديك كود اشتراك؟' : 'Have a subscription code?'}
           </div>
 
           <form onSubmit={handleApplyCode} className="flex gap-2.5">
@@ -96,12 +131,12 @@ export const PaywallView: React.FC = () => {
               type="text"
               value={inputCode}
               onChange={(e) => setInputCode(e.target.value)}
-              placeholder={isRTL ? 'أدخل كود التفعيل' : 'Enter code'}
+              placeholder={isRTL ? 'أدخل كود الاشتراك' : 'Enter code'}
               className="flex-1 px-4 py-2.5 text-xs font-mono uppercase tracking-wider rounded-2xl border-2 border-slate-200 bg-white text-slate-900 focus:outline-none focus:border-orange-500 text-center font-bold"
             />
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-2xl btn-glossy-orange text-xs cursor-pointer"
+              className="px-6 py-2.5 rounded-2xl btn-glossy-orange text-xs cursor-pointer font-bold"
             >
               {isRTL ? 'تفعيل' : 'Unlock'}
             </button>
@@ -141,11 +176,11 @@ export const PaywallView: React.FC = () => {
                   value={phoneInput}
                   onChange={(e) => setPhoneInput(e.target.value)}
                   placeholder="9647700000000"
-                  className="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white font-mono text-slate-900"
+                  className="flex-1 px-3 py-2 rounded-xl border border-slate-300 bg-white text-slate-900 font-mono text-xs focus:outline-none focus:border-orange-500"
                 />
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl btn-glossy-orange text-xs cursor-pointer"
+                  className="px-4 py-2 rounded-xl btn-glossy-orange text-xs font-bold cursor-pointer"
                 >
                   {isRTL ? 'حفظ' : 'Save'}
                 </button>

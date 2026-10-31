@@ -8,6 +8,9 @@ import {
   XCircle,
   Clock,
   Sparkles,
+  Zap,
+  Calendar,
+  ShieldCheck,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -32,8 +35,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   activeProfile,
   onStartQuiz,
 }) => {
-  const { t, isRTL, language } = useLanguage();
-  const { user, isPermanent, isTrialActive, timeLeftFormatted } = useAuth();
+  const { t, isRTL } = useLanguage();
+  const {
+    user,
+    isPermanent,
+    isTrialActive,
+    hasSubscription,
+    timeLeftFormatted,
+    usedLogins,
+    maxLogins,
+    remainingLogins,
+  } = useAuth();
 
   const totalAnswered = activeProfile.totalCorrect + activeProfile.totalWrong;
   const overallAccuracy =
@@ -63,21 +75,25 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               {(user?.email?.charAt(0) || activeProfile.username.charAt(0) || 'U').toUpperCase()}
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-lg font-black text-slate-900">
                   {user?.email?.split('@')[0] || activeProfile.username}
                 </h1>
-                {isPermanent ? (
+                {hasSubscription ? (
+                  <span className="text-[11px] font-bold text-orange-600 bg-orange-50 px-2.5 py-0.5 rounded-xl border border-orange-200">
+                    {isRTL ? 'اشتراك 100 دخول' : '100-Login Subscription'}
+                  </span>
+                ) : isPermanent ? (
                   <span className="text-[11px] font-bold text-orange-600 bg-orange-50 px-2.5 py-0.5 rounded-xl border border-orange-200">
                     VIP 20,000 IQD
                   </span>
                 ) : isTrialActive ? (
                   <span className="text-[11px] font-bold text-sky-600 bg-sky-50 px-2.5 py-0.5 rounded-xl border border-sky-200 font-mono">
-                    24h Trial ({timeLeftFormatted})
+                    {isRTL ? `تجربة يومين: ${timeLeftFormatted}` : `2-Day Trial: ${timeLeftFormatted}`}
                   </span>
                 ) : null}
               </div>
-              <p className="text-xs text-slate-500 font-mono mt-0.5">{user?.email || 'Gmail Account'}</p>
+              <p className="text-xs text-slate-500 font-mono mt-0.5">{user?.email || 'Student Account'}</p>
             </div>
           </div>
 
@@ -89,6 +105,47 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <Play className="h-3.5 w-3.5 fill-white" />
             <span>{t('navPlay')}</span>
           </button>
+        </div>
+      </div>
+
+      {/* SECTION 1.5: SUBSCRIPTION USAGE & DAILY LOGIN CARD */}
+      <div className="mt-4 rounded-2xl border-2 border-slate-200 bg-white p-5 shadow-xs">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2">
+            <Zap className="w-5 h-5 text-orange-500 fill-orange-500" />
+            <h2 className="text-sm font-extrabold text-slate-900">
+              {isRTL ? 'رصيد استخدام الخدمة وتسجيل الدخول' : 'Service Usage & Subscription Counter'}
+            </h2>
+          </div>
+          <span className="text-xs font-black text-orange-600 bg-orange-50 px-2.5 py-1 rounded-xl border border-orange-200 font-mono">
+            {usedLogins} / {maxLogins} {isRTL ? 'مرات استخدام' : 'Logins Used'}
+          </span>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden mb-3">
+          <div
+            className="h-full bg-gradient-to-r from-orange-400 to-amber-500 rounded-full transition-all duration-500"
+            style={{ width: `${Math.min(100, Math.max(5, (usedLogins / maxLogins) * 100))}%` }}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <span className="text-slate-500 text-[11px] block">{isRTL ? 'مرات الاستخدام الفعلية' : 'Times Used Service'}</span>
+            <span className="font-mono text-base font-black text-slate-900">{usedLogins}</span>
+          </div>
+          <div className="p-3 bg-orange-50/60 rounded-xl border border-orange-200">
+            <span className="text-orange-800 text-[11px] block">{isRTL ? 'مرات الدخول المتبقية' : 'Logins Remaining'}</span>
+            <span className="font-mono text-base font-black text-orange-600">{remainingLogins}</span>
+          </div>
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <span className="text-slate-500 text-[11px] block">{isRTL ? 'إعادة تسجيل الدخول اليومي' : 'Daily Re-login Security'}</span>
+            <span className="text-emerald-700 font-bold text-xs flex items-center gap-1 mt-0.5">
+              <Calendar className="w-3.5 h-3.5" />
+              <span>{isRTL ? 'مفعلة يومياً' : 'Active (Daily)'}</span>
+            </span>
+          </div>
         </div>
       </div>
 

@@ -20,7 +20,16 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectTab,
 }) => {
   const { language, toggleLanguage, t, isRTL } = useLanguage();
-  const { user, isUnlocked, isPermanent, isTrialActive, timeLeftFormatted, signOutUser } = useAuth();
+  const {
+    user,
+    isUnlocked,
+    isPermanent,
+    isTrialActive,
+    timeLeftFormatted,
+    usedLogins,
+    maxLogins,
+    signOutUser,
+  } = useAuth();
 
   return (
     <header className="sticky top-0 z-40 w-full border-b-2 border-slate-200 bg-white/95 backdrop-blur-md transition-colors shadow-xs">
@@ -87,11 +96,24 @@ export const Header: React.FC<HeaderProps> = ({
           </nav>
         )}
 
-        {/* Right Action Controls: Language, Status & Sign Out (No Day/Night Switcher) */}
+        {/* Right Action Controls: Language, Service Usage Counter, Status & Sign Out */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* Status Badge */}
+          {/* Service Usage Counter Badge */}
           {user && (
-            <div className="text-xs font-bold">
+            <div className="flex items-center gap-1.5">
+              <span
+                title={isRTL ? `استخدام الخدمة: ${usedLogins} من ${maxLogins}` : `Service Usage: ${usedLogins} of ${maxLogins}`}
+                className="inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-1 rounded-xl bg-orange-50 border border-orange-200 text-orange-700 shadow-xs"
+              >
+                <Zap className="w-3 h-3 text-orange-500 fill-orange-500" />
+                <span>
+                  {isRTL
+                    ? `${usedLogins}/${maxLogins} دخول`
+                    : `${usedLogins}/${maxLogins} Logins`}
+                </span>
+              </span>
+
+              {/* Status Badge */}
               {isPermanent ? (
                 <span className="text-white bg-gradient-to-b from-orange-400 to-orange-600 px-2.5 py-1 rounded-xl shadow-xs border border-orange-500 font-extrabold text-[11px]">
                   VIP

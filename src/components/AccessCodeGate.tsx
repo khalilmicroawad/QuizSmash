@@ -1,10 +1,18 @@
 import React, { useState } from 'react';
-import { KeyRound, Sparkles, MessageCircle, Timer, Settings, Check } from 'lucide-react';
-import { useAuth, PRICE_IQD } from '../context/AuthContext';
+import { KeyRound, Sparkles, MessageCircle, Timer, Settings, Check, Zap, ShieldCheck } from 'lucide-react';
+import { useAuth, PRICE_IQD, MAX_SUBSCRIPTION_LOGINS } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 
 export const AccessCodeGate: React.FC = () => {
-  const { submitAccessCode, activate24HourTrial, ownerWhatsApp, setOwnerWhatsApp } = useAuth();
+  const {
+    submitAccessCode,
+    activate2DayTrial,
+    ownerWhatsApp,
+    setOwnerWhatsApp,
+    usedLogins,
+    maxLogins,
+    remainingLogins,
+  } = useAuth();
   const { isRTL } = useLanguage();
 
   const [inputCode, setInputCode] = useState('');
@@ -19,7 +27,7 @@ export const AccessCodeGate: React.FC = () => {
     setSuccessMessage('');
 
     if (!inputCode.trim()) {
-      setErrorMessage(isRTL ? 'يرجى إدخال كود التفعيل.' : 'Please enter an activation code.');
+      setErrorMessage(isRTL ? 'يرجى إدخال كود الاشتراك أو التفعيل.' : 'Please enter a subscription code.');
       return;
     }
 
@@ -32,7 +40,7 @@ export const AccessCodeGate: React.FC = () => {
   };
 
   const handleStartTrial = () => {
-    activate24HourTrial();
+    activate2DayTrial();
   };
 
   const handleSavePhone = (e: React.FormEvent) => {
@@ -43,8 +51,8 @@ export const AccessCodeGate: React.FC = () => {
 
   const whatsappMessage = encodeURIComponent(
     isRTL
-      ? 'مرحباً، أود الحصول على كود تفعيل تطبيق كويز سماش (Quiz Smash). ما هي طريقة دفع 20,000 دينار عراقي؟'
-      : 'Hello! I would like to get an activation code for Quiz Smash. How can I pay 20,000 IQD for unlimited access?'
+      ? `مرحباً، أود الحصول على كود اشتراك تطبيق كويز سماش (100 تسجيل دخول) مقابل ${PRICE_IQD}. ما هي طريقة الدفع؟`
+      : `Hello! I would like to purchase the 100-login subscription code for Quiz Smash (${PRICE_IQD}). What is the payment method?`
   );
 
   const whatsappUrl = `https://wa.me/${ownerWhatsApp}?text=${whatsappMessage}`;
@@ -68,15 +76,37 @@ export const AccessCodeGate: React.FC = () => {
 
           <p className="mt-1.5 text-xs text-slate-600 max-w-xs mx-auto leading-relaxed">
             {isRTL
-              ? 'ابدأ فترتك التجريبية المجانية أو أدخل كود التفعيل للوصول غير المحدود.'
-              : 'Start your free trial or enter an activation code for unlimited access.'}
+              ? 'ابدأ التجربة المجانية لمدة يومين (48 ساعة) أو أدخل كود اشتراك 100 تسجيل دخول.'
+              : 'Start your 2-day free trial (48 hours) or enter your 100-login subscription code.'}
           </p>
         </div>
+
+        {/* SECTION 1.5: SERVICE USAGE COUNTER (IF ACTIVE) */}
+        {usedLogins > 0 && (
+          <div className="mt-4 p-3 rounded-2xl bg-orange-50/70 border border-orange-200 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Zap className="w-4 h-4 text-orange-500 fill-orange-500" />
+              <div className="text-left rtl:text-right">
+                <div className="text-[10px] font-extrabold uppercase text-orange-800">
+                  {isRTL ? 'رصيد استخدام الخدمة' : 'Service Usage Counter'}
+                </div>
+                <div className="text-xs font-bold text-slate-700">
+                  {isRTL
+                    ? `تم استخدام ${usedLogins} من أصل ${maxLogins} تسجيل دخول`
+                    : `Used ${usedLogins} of ${maxLogins} logins`}
+                </div>
+              </div>
+            </div>
+            <span className="font-mono text-xs font-black px-2 py-1 rounded-xl bg-white border border-orange-200 text-orange-600">
+              {remainingLogins} {isRTL ? 'متبقي' : 'left'}
+            </span>
+          </div>
+        )}
 
         {/* LINE SEPARATING HEADER FROM TRIAL SECTION */}
         <div className="w-full border-b-2 border-slate-200 my-5" />
 
-        {/* SECTION 2: 24-HOUR FREE TRIAL */}
+        {/* SECTION 2: 2-DAY FREE TRIAL (48 HOURS) */}
         <div>
           <button
             type="button"
@@ -84,30 +114,41 @@ export const AccessCodeGate: React.FC = () => {
             className="w-full py-3.5 px-4 rounded-2xl btn-glossy-orange text-sm flex items-center justify-center gap-2 cursor-pointer shadow-md"
           >
             <Timer className="w-5 h-5" />
-            <span>{isRTL ? 'بدء تجربة مجانية (24 ساعة)' : 'Start 24-Hour Free Trial'}</span>
+            <span>{isRTL ? 'بدء تجربة مجانية (يومان / 48 ساعة)' : 'Start 2-Day Free Trial (48 Hours)'}</span>
           </button>
+          <p className="mt-1.5 text-[11px] text-slate-500">
+            {isRTL
+              ? 'تتيح لك حل جميع أسئلة اختبار الجهاز العصبي (105 أسئلة) مجاناً لمدة يومين.'
+              : 'Practice all 105 CNS Test questions free for 48 hours.'}
+          </p>
         </div>
 
         {/* LINE SEPARATING TRIAL FROM CODE ENTRY SECTION */}
         <div className="w-full border-b-2 border-slate-200 my-5" />
 
-        {/* SECTION 3: CODE INPUT FORM */}
+        {/* SECTION 3: SUBSCRIPTION CODE (100 LOGINS) */}
         <div>
-          <div className="text-xs uppercase tracking-wider font-extrabold text-slate-500 mb-3">
-            {isRTL ? 'هل لديك كود تفعيل؟' : 'Or enter activation code'}
+          <div className="text-xs uppercase tracking-wider font-extrabold text-slate-500 mb-1.5 flex items-center justify-center gap-1.5">
+            <ShieldCheck className="w-4 h-4 text-orange-500" />
+            <span>{isRTL ? 'كود اشتراك (100 تسجيل دخول):' : 'Subscription Code (100 Logins):'}</span>
           </div>
+          <p className="text-[11px] text-slate-500 mb-3">
+            {isRTL
+              ? 'يمنحك الكود 100 مرة تسجيل دخول للخدمة مع تجديد الدخول اليومي الإجباري.'
+              : 'Grants 100 service logins with mandatory daily re-login security.'}
+          </p>
 
           <form onSubmit={handleSubmit} className="flex gap-2.5">
             <input
               type="text"
               value={inputCode}
               onChange={(e) => setInputCode(e.target.value)}
-              placeholder={isRTL ? 'كود التفعيل (VIP2026)' : 'Code (e.g. VIP2026)'}
+              placeholder={isRTL ? 'كود الاشتراك (مثال: SUB100)' : 'Code (e.g. SUB100)'}
               className="flex-1 px-4 py-2.5 text-xs font-mono uppercase tracking-wider rounded-2xl border-2 border-slate-200 bg-white text-slate-900 focus:outline-none focus:border-orange-500 text-center font-bold"
             />
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-2xl btn-glossy-orange text-xs cursor-pointer"
+              className="px-6 py-2.5 rounded-2xl btn-glossy-orange text-xs cursor-pointer font-bold"
             >
               {isRTL ? 'تفعيل' : 'Unlock'}
             </button>
@@ -129,7 +170,7 @@ export const AccessCodeGate: React.FC = () => {
         {/* LINE SEPARATING CODE ENTRY FROM WHATSAPP SECTION */}
         <div className="w-full border-b-2 border-slate-200 my-5" />
 
-        {/* SECTION 4: DIRECT WHATSAPP LINK */}
+        {/* SECTION 4: DIRECT WHATSAPP LINK FOR SUBSCRIPTION */}
         <div>
           <a
             href={whatsappUrl}
@@ -138,7 +179,11 @@ export const AccessCodeGate: React.FC = () => {
             className="w-full py-3 px-4 rounded-2xl btn-glossy-orange-outline text-xs font-extrabold flex items-center justify-center gap-2 cursor-pointer"
           >
             <MessageCircle className="w-4 h-4" />
-            <span>{isRTL ? `طلب كود غير محدود عبر واتساب (${PRICE_IQD})` : `Get Unlimited Code via WhatsApp (${PRICE_IQD})`}</span>
+            <span>
+              {isRTL
+                ? `طلب كود الاشتراك عبر واتساب (${PRICE_IQD} - 100 دخول)`
+                : `Get 100-Login Code via WhatsApp (${PRICE_IQD})`}
+            </span>
           </a>
         </div>
 
@@ -164,11 +209,11 @@ export const AccessCodeGate: React.FC = () => {
                   value={phoneInput}
                   onChange={(e) => setPhoneInput(e.target.value)}
                   placeholder="9647700000000"
-                  className="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white font-mono text-slate-900"
+                  className="flex-1 px-3 py-2 rounded-xl border border-slate-300 bg-white text-slate-900 font-mono text-xs focus:outline-none focus:border-orange-500"
                 />
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl btn-glossy-orange text-xs cursor-pointer"
+                  className="px-4 py-2 rounded-xl btn-glossy-orange text-xs font-bold cursor-pointer"
                 >
                   {isRTL ? 'حفظ' : 'Save'}
                 </button>
