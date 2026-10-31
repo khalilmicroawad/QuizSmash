@@ -13,6 +13,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { InstallModal } from './components/InstallModal';
+import { fetchCnsTestQuestions } from './services/cnsTestService';
 
 function QuizSmashApp() {
   const [currentTab, setCurrentTab] = useState<'play' | 'bank' | 'profile'>('play');
@@ -22,6 +23,19 @@ function QuizSmashApp() {
   const [isInstallModalOpen, setIsInstallModalOpen] = useState<boolean>(false);
   const { t } = useLanguage();
   const { user, isUnlocked, trialExpiresAt, isLoading } = useAuth();
+
+  // Auto-fetch CNS Test from Supabase if questions are empty
+  React.useEffect(() => {
+    if (questions.length === 0) {
+      fetchCnsTestQuestions()
+        .then(({ questions: cnsQuestions }) => {
+          setQuestions(cnsQuestions);
+        })
+        .catch((err) => {
+          console.warn('Could not auto-fetch CNS Test:', err);
+        });
+    }
+  }, [questions.length]);
 
   // Listen for storage updates
   const refreshProfile = () => {

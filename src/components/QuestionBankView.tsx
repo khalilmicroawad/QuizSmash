@@ -1,17 +1,14 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
-  Upload,
-  FileText,
-  Download,
+  Brain,
   Trash2,
-  CheckCircle,
   Search,
   Play,
 } from 'lucide-react';
 import { Question } from '../types/quiz';
-import { parseQuestionBank, exportToTxt, getSampleTxtTemplate } from '../services/questionParser';
 import { StorageService } from '../services/storageService';
 import { useLanguage } from '../context/LanguageContext';
+import { fetchCnsTestQuestions } from '../services/cnsTestService';
 
 interface QuestionBankViewProps {
   questions: Question[];
@@ -24,51 +21,32 @@ export const QuestionBankView: React.FC<QuestionBankViewProps> = ({
   onQuestionsUpdated,
   onLaunchQuiz,
 }) => {
-  const { t, isRTL, language } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [feedback, setFeedback] = useState<{ success: boolean; message: string } | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isLoadingCns, setIsLoadingCns] = useState<boolean>(false);
 
-  // File upload handler
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = (event.target?.result as string) || '';
-      const result = parseQuestionBank(text);
-      if (result.questions.length > 0) {
-        StorageService.saveQuestions(result.questions);
-        onQuestionsUpdated(result.questions);
-        setFeedback({
-          success: true,
-          message: isRTL
-            ? `تم تحميل ${result.questions.length} سؤال بنجاح!`
-            : `Successfully loaded ${result.questions.length} questions!`,
-        });
-      } else {
-        setFeedback({
-          success: false,
-          message: isRTL
-            ? 'لم يتم العثور على أسئلة صالحة. تأكد من أن كل إجابة صحيحة تبدأ بعلامة "+".'
-            : 'No valid questions found. Ensure correct answers begin with "+".',
-        });
-      }
-    };
-    reader.readAsText(file);
-  };
-
-  // Download sample .txt file
-  const handleDownloadSample = () => {
-    const template = getSampleTxtTemplate(language);
-    const blob = new Blob([template], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `quiz_sample_${language}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+  // CNS Test Loader (Fetches mcq_cns.txt from Supabase storage)
+  const handleLoadCnsTest = async () => {
+    setIsLoadingCns(true);
+    setFeedback(null);
+    try {
+      const { questions: cnsQuestions, count } = await fetchCnsTestQuestions();
+      onQuestionsUpdated(cnsQuestions);
+      setFeedback({
+        success: true,
+        message: isRTL
+          ? `تم بنجاح تحميل اختبار الـ CNS (${count} سؤال) من Supabase!`
+          : `Successfully loaded CNS Test (${count} questions) from Supabase!`,
+      });
+    } catch (err: any) {
+      setFeedback({
+        success: false,
+        message: err.message || 'Failed to download CNS Test file from Supabase.',
+      });
+    } finally {
+      setIsLoadingCns(false);
+    }
   };
 
   // Clear questions
@@ -97,16 +75,7 @@ export const QuestionBankView: React.FC<QuestionBankViewProps> = ({
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
-      {/* Hidden file input */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileUpload}
-        accept=".txt"
-        className="hidden"
-      />
-
-      {/* SECTION 1: HEADER WITH TITLE AND ESSENTIAL ACTIONS */}
+      {/* SECTION 1: HEADER WITH TITLE AND CNS TEST ACTION */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
@@ -115,39 +84,35 @@ export const QuestionBankView: React.FC<QuestionBankViewProps> = ({
           <p className="text-xs text-slate-500 mt-0.5">
             {questions.length > 0
               ? isRTL
-                ? `${questions.length} سؤال متاح`
-                : `${questions.length} questions loaded`
-              : t('bankEmptySummary')}
+                ? `${questions.length} سؤال متاح (اختبار CNS)`
+                : `${questions.length} questions loaded (CNS Test)`
+              : (isRTL ? 'لا توجد أسئلة، اضغط على زر CNS Test لتحميل الاختبار' : 'No questions loaded. Click CNS Test below.')}
           </p>
         </div>
 
-        {/* Top 3 Actions with Orange Glossy Rounded Angels */}
+        {/* Top Actions: CNS Test Button & Start Quiz */}
         <div className="flex items-center gap-2.5">
           <button
             type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-2 px-4 py-2 rounded-2xl btn-glossy-orange-outline text-xs font-bold cursor-pointer"
+            disabled={isLoadingCns}
+            onClick={handleLoadCnsTest}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-2xl btn-glossy-orange text-xs font-black cursor-pointer shadow-sm disabled:opacity-50"
           >
-            <Upload className="h-3.5 w-3.5 text-orange-500" />
-            <span>{t('uploadBankBtn')}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleDownloadSample}
-            className="flex items-center gap-2 px-4 py-2 rounded-2xl btn-glossy-orange-outline text-xs font-bold cursor-pointer"
-          >
-            <Download className="h-3.5 w-3.5 text-orange-500" />
-            <span>{t('sampleTxtBtn')}</span>
+            {isLoadingCns ? (
+              <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Brain className="h-4 w-4 fill-white" />
+            )}
+            <span>{isLoadingCns ? (isRTL ? 'جاري التحميل...' : 'Loading...') : 'CNS Test'}</span>
           </button>
 
           {questions.length > 0 && (
             <button
               type="button"
               onClick={onLaunchQuiz}
-              className="flex items-center gap-2 px-5 py-2 rounded-2xl btn-glossy-orange text-xs font-black cursor-pointer shadow-sm"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl btn-glossy-orange-outline text-xs font-black cursor-pointer"
             >
-              <Play className="h-3.5 w-3.5 fill-white" />
+              <Play className="h-3.5 w-3.5 fill-orange-500 text-orange-500" />
               <span>{t('navPlay')}</span>
             </button>
           )}
@@ -178,23 +143,31 @@ export const QuestionBankView: React.FC<QuestionBankViewProps> = ({
 
       {/* Main Content: Either Empty state or Question List */}
       {questions.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-slate-300 p-8 sm:p-12 text-center bg-white">
-          <div className="mx-auto w-12 h-12 rounded-2xl btn-glossy-orange flex items-center justify-center mb-3 text-white">
-            <Upload className="h-6 w-6" />
+        <div className="rounded-2xl border-2 border-slate-200 p-8 sm:p-12 text-center bg-white shadow-xs">
+          <div className="mx-auto w-14 h-14 rounded-2xl btn-glossy-orange flex items-center justify-center mb-4 text-white shadow-md">
+            <Brain className="h-7 w-7" />
           </div>
-          <h3 className="text-base font-bold text-slate-900 mb-1">
-            {t('emptyBankTitle')}
+          <h3 className="text-xl font-black text-slate-900 mb-1.5">
+            CNS Test
           </h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto mb-5 leading-relaxed">
-            {t('emptyBankDesc')}
+          <p className="text-xs text-slate-500 max-w-sm mx-auto mb-6 leading-relaxed">
+            {isRTL
+              ? 'اضغط أدناه لتحميل اختبار الـ CNS مباشرة من Supabase (105 أسئلة MCQ).'
+              : 'Click below to fetch the Central Nervous System MCQ bank (105 questions) directly from Supabase.'}
           </p>
 
           <button
             type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="px-6 py-3 rounded-2xl font-bold text-xs btn-glossy-orange cursor-pointer"
+            disabled={isLoadingCns}
+            onClick={handleLoadCnsTest}
+            className="px-8 py-3.5 rounded-2xl font-black text-sm btn-glossy-orange flex items-center justify-center gap-2.5 mx-auto cursor-pointer shadow-md disabled:opacity-50"
           >
-            {t('uploadBankBtn')} (.txt)
+            {isLoadingCns ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Brain className="h-4 w-4" />
+            )}
+            <span>{isLoadingCns ? (isRTL ? 'جاري التحميل...' : 'Loading...') : 'CNS Test'}</span>
           </button>
         </div>
       ) : (

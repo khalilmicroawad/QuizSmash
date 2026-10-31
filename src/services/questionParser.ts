@@ -39,10 +39,16 @@ export function parseQuestionBank(rawText: string): ParseResult {
 
     const uniqueId = `q_${Date.now()}_${questions.length + 1}_${Math.random().toString(36).substring(2, 7)}`;
 
+    // Clean leading question numbering (e.g. "1. ", "105. ")
+    const cleanedQuestionText = currentQuestionText.trim().replace(/^[0-9]+[\.\)\-]\s*/, '');
+
+    // Clean leading option letters (e.g. "a) ", "b) ", "A) ", "a. ")
+    const cleanedOptions = currentOptions.map((opt) => opt.replace(/^[a-zA-Z][\)\.]\s*/, '').trim());
+
     questions.push({
       id: uniqueId,
-      questionText: currentQuestionText.trim(),
-      options: currentOptions,
+      questionText: cleanedQuestionText || currentQuestionText.trim(),
+      options: cleanedOptions,
       correctOptionIndex: currentCorrectIndex,
       explanation: currentExplanation.trim() ? currentExplanation.trim() : undefined,
     });

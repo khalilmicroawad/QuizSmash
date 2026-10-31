@@ -10,7 +10,6 @@ import {
   BarChart3,
   Zap,
   AlertCircle,
-  Upload,
   Play,
   Shuffle,
   BookOpen,
@@ -19,6 +18,7 @@ import {
   Check,
   Volume2,
   VolumeX,
+  Brain,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Question, QuizSettings, QuizAttempt, QuestionResult, UserProfile } from '../types/quiz';
@@ -27,6 +27,7 @@ import { StorageService } from '../services/storageService';
 import { parseQuestionBank, getSampleTxtTemplate } from '../services/questionParser';
 import { getTimerDifficulty, calculateQuestionScore, FIXED_TIMER_SECONDS } from '../services/scoringService';
 import { useLanguage } from '../context/LanguageContext';
+import { fetchCnsTestQuestions } from '../services/cnsTestService';
 
 interface QuizPlayViewProps {
   questions: Question[];
@@ -89,9 +90,10 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
   const timerRef = useRef<number | null>(null);
   const advanceTimeoutRef = useRef<number | null>(null);
 
-  // Inline upload state
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // CNS Test loading state
+  const [isLoadingCns, setIsLoadingCns] = useState<boolean>(false);
   const [inlineUploadError, setInlineUploadError] = useState<string | null>(null);
+  const [cnsSuccessMessage, setCnsSuccessMessage] = useState<string | null>(null);
 
   // Current Difficulty Config based on mode
   const activeDifficulty = getTimerDifficulty(playMode === 'exam' ? FIXED_TIMER_SECONDS : 0);
@@ -395,30 +397,26 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [gameState, isAnswered, currentIndex, quizQuestions, playMode, questionResults, advanceToNextQuestion, handleSelectOption]);
 
-  // Inline upload handler
-  const handleInlineFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = (event.target?.result as string) || '';
-      const result = parseQuestionBank(text);
-      if (result.questions.length > 0) {
-        StorageService.saveQuestions(result.questions);
-        setInlineUploadError(null);
-        if (onQuestionsUploaded) {
-          onQuestionsUploaded(result.questions);
-        }
-      } else {
-        setInlineUploadError(
-          isRTL
-            ? 'تعذر العثور على أسئلة صالحة. تأكد من أن كل إجابة صحيحة تبدأ بعلامة "+".'
-            : 'Could not find questions in file. Verify that correct answers start with a "+" symbol.'
-        );
+  // CNS Test Loader handler (Fetches from Supabase storage)
+  const handleLoadCnsTest = async () => {
+    setIsLoadingCns(true);
+    setInlineUploadError(null);
+    setCnsSuccessMessage(null);
+    try {
+      const { questions: cnsQuestions, count } = await fetchCnsTestQuestions();
+      if (onQuestionsUploaded) {
+        onQuestionsUploaded(cnsQuestions);
       }
-    };
-    reader.readAsText(file);
+      setCnsSuccessMessage(
+        isRTL
+          ? `تم بنجاح تحميل اختبار CNS (${count} سؤال)!`
+          : `CNS Test loaded successfully (${count} questions)!`
+      );
+    } catch (err: any) {
+      setInlineUploadError(err.message || 'Failed to download CNS Test file from Supabase.');
+    } finally {
+      setIsLoadingCns(false);
+    }
   };
 
   const currentQ = quizQuestions[currentIndex];
@@ -547,53 +545,39 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
         {/* LINE SEPARATING MODE SELECTOR SECTION FROM START/ACTION SECTION */}
         <div className="w-full border-b-2 border-slate-200 my-6" />
 
-        {/* SECTION 3: START ACTION */}
+        {/* SECTION 3: START ACTION & CNS TEST BUTTON */}
         {questions.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-slate-300 p-8 text-center bg-white">
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleInlineFileSelect}
-              accept=".txt"
-              className="hidden"
-              id="inline-txt-file"
-            />
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-orange-50 text-orange-500 mb-3">
-              <Upload className="h-6 w-6" />
+          <div className="rounded-2xl border-2 border-slate-200 p-8 sm:p-10 text-center bg-white shadow-xs">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl btn-glossy-orange text-white mb-4 shadow-md">
+              <Brain className="h-7 w-7" />
             </div>
-            <h3 className="text-base font-bold text-slate-900 mb-1">
-              {t('emptyBankTitle')}
+            <h3 className="text-xl font-black text-slate-900 mb-1.5">
+              CNS Test
             </h3>
-            <p className="text-xs text-slate-500 max-w-md mx-auto mb-5 leading-relaxed">
-              {t('emptyBankDesc')}
+            <p className="text-xs text-slate-500 max-w-md mx-auto mb-6 leading-relaxed">
+              {isRTL
+                ? 'اضغط على الزر أدناه لتحميل بنك أسئلة الـ CNS (105 أسئلة MCQ) من Supabase والبدء فوراً.'
+                : 'Click the button below to load the Central Nervous System MCQ questions (105 questions) from Supabase and start immediately.'}
             </p>
 
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              <label
-                htmlFor="inline-txt-file"
-                className="cursor-pointer px-6 py-3 rounded-2xl font-extrabold text-xs btn-glossy-orange flex items-center gap-2"
-              >
-                <Upload className="h-4 w-4" />
-                <span>{t('uploadBankBtn')}</span>
-              </label>
-
-              <button
-                type="button"
-                onClick={() => {
-                  const sample = parseQuestionBank(getSampleTxtTemplate(language));
-                  StorageService.saveQuestions(sample.questions);
-                  if (onQuestionsUploaded) {
-                    onQuestionsUploaded(sample.questions);
-                  }
-                }}
-                className="px-5 py-3 rounded-2xl font-bold text-xs text-slate-700 border-2 border-slate-200 bg-white hover:border-orange-400 transition-colors cursor-pointer"
-              >
-                {t('loadSampleBtn')}
-              </button>
-            </div>
+            <button
+              type="button"
+              disabled={isLoadingCns}
+              onClick={handleLoadCnsTest}
+              className="px-8 py-3.5 rounded-2xl text-sm font-black btn-glossy-orange flex items-center justify-center gap-2.5 mx-auto cursor-pointer shadow-md disabled:opacity-50"
+            >
+              {isLoadingCns ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Brain className="h-4 w-4" />
+              )}
+              <span>{isLoadingCns ? (isRTL ? 'جاري التحميل...' : 'Loading...') : 'CNS Test'}</span>
+            </button>
 
             {inlineUploadError && (
-              <p className="mt-3 text-xs text-rose-500 font-medium">{inlineUploadError}</p>
+              <p className="mt-4 text-xs text-rose-600 font-bold bg-rose-50 border-2 border-rose-200 p-3 rounded-2xl max-w-md mx-auto">
+                {inlineUploadError}
+              </p>
             )}
           </div>
         ) : (
@@ -618,12 +602,27 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
                 </div>
               </div>
 
-              {/* Orange Glossy Rounded Start Button */}
-              <div className="w-full sm:w-auto">
+              {/* Action Buttons: CNS Test button + Start Quiz button */}
+              <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                <button
+                  type="button"
+                  disabled={isLoadingCns}
+                  onClick={handleLoadCnsTest}
+                  className="px-5 py-3.5 rounded-2xl text-xs font-black btn-glossy-orange-outline flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                  title="Load/Reload CNS Test from Supabase"
+                >
+                  {isLoadingCns ? (
+                    <div className="w-3.5 h-3.5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Brain className="h-4 w-4 text-orange-500" />
+                  )}
+                  <span>CNS Test</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={handleStartQuiz}
-                  className="w-full sm:w-auto px-8 py-3.5 rounded-2xl text-sm btn-glossy-orange flex items-center justify-center gap-2.5 shrink-0 cursor-pointer"
+                  className="flex-1 sm:flex-initial px-8 py-3.5 rounded-2xl text-sm btn-glossy-orange flex items-center justify-center gap-2.5 shrink-0 cursor-pointer shadow-md"
                 >
                   <Play className="h-4 w-4 fill-white" />
                   <span>
@@ -637,6 +636,12 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
                 </button>
               </div>
             </div>
+
+            {cnsSuccessMessage && (
+              <p className="text-xs text-center text-emerald-800 font-bold bg-emerald-50 border-2 border-emerald-300 p-2.5 rounded-2xl">
+                {cnsSuccessMessage}
+              </p>
+            )}
 
             <p className="text-xs text-center text-slate-400 flex items-center justify-center gap-1">
               <Shuffle className="h-3.5 w-3.5" />
