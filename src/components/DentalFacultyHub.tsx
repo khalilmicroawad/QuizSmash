@@ -20,13 +20,15 @@ import {
   Star,
   Crown,
   Target,
-  BarChart3,
+  BookMarked,
+  FileText,
 } from 'lucide-react';
 import { DentalSubject, DENTAL_FACULTY_SUBJECTS } from '../data/dentalSubjects';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { Question, UserProfile } from '../types/quiz';
 import { fetchCnsTestQuestions } from '../services/cnsTestService';
+import { fetchTerminologyTestQuestions } from '../services/terminologyTestService';
 import { MasteryService, SubjectMasteryInfo } from '../services/masteryService';
 import { StorageService } from '../services/storageService';
 
@@ -47,15 +49,15 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
 }) => {
   const { isRTL } = useLanguage();
   const { timeLeftFormatted, isTrialActive, usedLogins, maxLogins, remainingLogins } = useAuth();
-  const [selectedSubjectId, setSelectedSubjectId] = useState<string>('general-human-anatomy');
-  const [isLoadingCns, setIsLoadingCns] = useState<boolean>(false);
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>('medical-terminology');
+  const [loadingSubjectId, setLoadingSubjectId] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ message: string; type: 'info' | 'success' } | null>(null);
 
   // Fallback to active profile in storage if not passed
   const currentProfile = activeProfile || StorageService.getActiveProfile();
   const history = currentProfile?.history || [];
 
-  // Calculate mastery info for all 5 dental faculty subjects based on previous sessions
+  // Calculate mastery info for all dental faculty subjects based on previous sessions
   const subjectMasteryMap = MasteryService.getAllSubjectsMastery(
     DENTAL_FACULTY_SUBJECTS.map((s) => s.id),
     history
@@ -69,6 +71,8 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
 
   const getSubjectIcon = (id: string) => {
     switch (id) {
+      case 'medical-terminology':
+        return <BookMarked className="w-6 h-6 text-orange-500" />;
       case 'dental-anatomy':
         return <Sparkles className="w-6 h-6 text-orange-500" />;
       case 'general-human-anatomy':
@@ -105,36 +109,55 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
     setSelectedSubjectId(subject.id);
     onSelectSubject(subject);
 
-    if (subject.id === 'general-human-anatomy') {
-      // General Human Anatomy has CNS Test MCQs (105 questions)
-      if (questions.length === 0) {
-        setIsLoadingCns(true);
-        try {
-          const { questions: cnsQuestions, count } = await fetchCnsTestQuestions();
-          onQuestionsUpdated(cnsQuestions);
-          setNotice({
-            type: 'success',
-            message: isRTL
-              ? `تم تحميل ${count} سؤال لاختبار الجهاز العصبي المركزي (CNS Test) بنجاح!`
-              : `Loaded ${count} CNS Test MCQs successfully!`,
-          });
-        } catch (err: any) {
-          setNotice({
-            type: 'info',
-            message: err.message || 'Error loading CNS questions',
-          });
-        } finally {
-          setIsLoadingCns(false);
-        }
+    if (subject.id === 'medical-terminology') {
+      // Medical Terminology (Loads 100 MCQs from Terminology.txt link)
+      setLoadingSubjectId('medical-terminology');
+      try {
+        const { questions: termQuestions, count } = await fetchTerminologyTestQuestions();
+        onQuestionsUpdated(termQuestions);
+        setNotice({
+          type: 'success',
+          message: isRTL
+            ? `تم تحميل ${count} سؤال لمادة المصطلحات الطبية (Terminology) بنجاح!`
+            : `Loaded ${count} Medical Terminology MCQs successfully!`,
+        });
+        onLaunchQuiz();
+      } catch (err: any) {
+        setNotice({
+          type: 'info',
+          message: err.message || 'Error loading Medical Terminology questions',
+        });
+      } finally {
+        setLoadingSubjectId(null);
       }
-      onLaunchQuiz();
+    } else if (subject.id === 'general-human-anatomy') {
+      // General Human Anatomy has CNS Test MCQs (105 questions)
+      setLoadingSubjectId('general-human-anatomy');
+      try {
+        const { questions: cnsQuestions, count } = await fetchCnsTestQuestions();
+        onQuestionsUpdated(cnsQuestions);
+        setNotice({
+          type: 'success',
+          message: isRTL
+            ? `تم تحميل ${count} سؤال لاختبار الجهاز العصبي المركزي (CNS Test) بنجاح!`
+            : `Loaded ${count} CNS Test MCQs successfully!`,
+        });
+        onLaunchQuiz();
+      } catch (err: any) {
+        setNotice({
+          type: 'info',
+          message: err.message || 'Error loading CNS questions',
+        });
+      } finally {
+        setLoadingSubjectId(null);
+      }
     } else {
-      // Other 4 dental faculty subjects that will be attached later to MCQs
+      // Other dental faculty subjects ready for attachment
       setNotice({
         type: 'info',
         message: isRTL
-          ? `مادة ${subject.nameAr} جاهزة للربط مع بنك أسئلة الـ MCQ قريباً. يمكنك التدريب على تشريح الجهاز العصبي (CNS Test) حالياً!`
-          : `${subject.nameEn} is configured and ready for MCQs attachment. You can practice General Human Anatomy (CNS Test - 105 MCQs) now!`,
+          ? `مادة ${subject.nameAr} جاهزة للربط مع بنك أسئلة الـ MCQ قريباً. يمكنك التدريب على المصطلحات الطبية (100 سؤال) أو تشريح الجهاز العصبي (105 أسئلة) حالياً!`
+          : `${subject.nameEn} is configured and ready for MCQs attachment. You can practice Medical Terminology (100 MCQs) or CNS Test (105 MCQs) now!`,
       });
     }
   };
@@ -152,7 +175,7 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
               </span>
               <span className="text-slate-300">·</span>
               <span className="text-xs font-bold text-sky-600">
-                {isRTL ? '5 مواد دراسية معتمدة' : '5 Core Dental Subjects'}
+                {isRTL ? '6 مواد دراسية معتمدة' : '6 Core Dental Subjects'}
               </span>
               {isTrialActive && (
                 <>
@@ -214,7 +237,7 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
                   {isRTL ? 'الأسئلة النشطة' : 'Active MCQs'}
                 </div>
                 <div className="font-mono text-lg font-extrabold text-orange-500">
-                  {questions.length > 0 ? questions.length : 105}
+                  {questions.length > 0 ? questions.length : 100}
                 </div>
               </div>
               <Sparkles className="h-6 w-6 text-orange-500 shrink-0" />
@@ -264,10 +287,11 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
           </span>
         </div>
 
-        {/* The 5 Dental Faculty Subjects Grid */}
+        {/* The Dental Faculty Subjects Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {DENTAL_FACULTY_SUBJECTS.map((subject) => {
             const isSelected = selectedSubjectId === subject.id;
+            const isLoadingThisSubject = loadingSubjectId === subject.id;
             const mastery: SubjectMasteryInfo = subjectMasteryMap[subject.id] || {
               subjectId: subject.id,
               level: 0,
@@ -378,7 +402,7 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
                         <span>
                           {mastery.nextTarget === null
                             ? isRTL
-                              ? 'أعلى إتقان تم تحقيقه (105+)'
+                              ? 'أعلى إتقان تم تحقيقه (100+)'
                               : 'Max Mastery Level Achieved'
                             : isRTL
                             ? `${mastery.totalCorrect} / ${mastery.nextTarget} للمستوى ${mastery.level + 1}`
@@ -420,11 +444,11 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
                 <div className="mt-5 pt-4 border-t border-slate-100">
                   <button
                     type="button"
-                    disabled={isLoadingCns && subject.id === 'general-human-anatomy'}
+                    disabled={isLoadingThisSubject}
                     onClick={() => handleSubjectClick(subject)}
-                    className="w-full py-3 px-4 rounded-2xl text-xs font-black btn-glossy-orange flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.99]"
+                    className="w-full py-3 px-4 rounded-2xl text-xs font-black btn-glossy-orange flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.99] disabled:opacity-70"
                   >
-                    {isLoadingCns && subject.id === 'general-human-anatomy' ? (
+                    {isLoadingThisSubject ? (
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : subject.hasQuestions ? (
                       <Play className="w-3.5 h-3.5 fill-white" />
@@ -444,46 +468,101 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
       {/* LINE SEPARATING SUBJECTS FROM SUMMARY FOOTER */}
       <div className="w-full border-b-2 border-slate-200 my-6" />
 
-      {/* SECTION 3: QUICK CNS TEST DIRECT LAUNCH */}
-      <div className="rounded-2xl border-2 border-slate-200 bg-white p-6 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5 text-center sm:text-left rtl:sm:text-right">
-          <div className="w-12 h-12 rounded-2xl btn-glossy-orange flex items-center justify-center text-white shrink-0">
-            <Brain className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2 mb-0.5">
-              <h4 className="text-sm font-extrabold text-slate-900">
-                {isRTL ? 'اختبار الجهاز العصبي المركزي (CNS Test - 105 أسئلة)' : 'CNS Test (Central Nervous System - 105 MCQs)'}
-              </h4>
-              {subjectMasteryMap['general-human-anatomy'] && subjectMasteryMap['general-human-anatomy'].level > 0 && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md bg-orange-100 text-orange-700 border border-orange-200">
-                  <Award className="w-3 h-3 text-orange-500" />
-                  <span>
-                    Lv.{subjectMasteryMap['general-human-anatomy'].level} (
-                    {subjectMasteryMap['general-human-anatomy'].totalCorrect} {isRTL ? 'صحيحة' : 'correct'})
-                  </span>
-                </span>
-              )}
+      {/* SECTION 3: DIRECT ACCESS CARDS FOR ACTIVE MCQ BANKS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Card 1: Medical Terminology (100 MCQs) */}
+        <div className="rounded-2xl border-2 border-orange-300 bg-orange-50/30 p-5 shadow-xs flex flex-col justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="w-11 h-11 rounded-2xl btn-glossy-orange flex items-center justify-center text-white shrink-0">
+              <BookMarked className="w-5 h-5" />
             </div>
-            <p className="text-xs text-slate-500">
-              {isRTL
-                ? 'مرتبط بمادة التشريح البشري العام ومتاح للبدء الفوري لاختبار معلوماتك ورفع شارة الإتقان.'
-                : 'Linked to General Human Anatomy and ready for instant practice or exam to boost your Mastery Level.'}
-            </p>
+            <div>
+              <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                <h4 className="text-sm font-extrabold text-slate-900">
+                  {isRTL ? 'المصطلحات الطبية (100 سؤال MCQ)' : 'Medical Terminology (100 MCQs)'}
+                </h4>
+                {subjectMasteryMap['medical-terminology'] && subjectMasteryMap['medical-terminology'].level > 0 && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md bg-orange-100 text-orange-700 border border-orange-200">
+                    <Award className="w-3 h-3 text-orange-500" />
+                    <span>
+                      Lv.{subjectMasteryMap['medical-terminology'].level} (
+                      {subjectMasteryMap['medical-terminology'].totalCorrect} {isRTL ? 'صحيحة' : 'correct'})
+                    </span>
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                {isRTL
+                  ? 'بنك أسئلة الجذور، البادئات، اللواحق، والمصطلحات الطبية والسنية من الرابط المباشر.'
+                  : 'Word parts, prefixes, suffixes, root words, and dental terms loaded from Supabase storage.'}
+              </p>
+            </div>
           </div>
+
+          <button
+            type="button"
+            disabled={loadingSubjectId === 'medical-terminology'}
+            onClick={() => {
+              const term = DENTAL_FACULTY_SUBJECTS.find((s) => s.id === 'medical-terminology');
+              if (term) handleSubjectClick(term);
+            }}
+            className="w-full py-2.5 px-5 rounded-2xl text-xs font-black btn-glossy-orange flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-70"
+          >
+            {loadingSubjectId === 'medical-terminology' ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Play className="w-3.5 h-3.5 fill-white" />
+            )}
+            <span>{isRTL ? 'بدء اختبار المصطلحات الطبية (100 سؤال)' : 'Start Medical Terminology (100 MCQs)'}</span>
+          </button>
         </div>
 
-        <button
-          type="button"
-          onClick={() => {
-            const anat = DENTAL_FACULTY_SUBJECTS.find((s) => s.id === 'general-human-anatomy');
-            if (anat) handleSubjectClick(anat);
-          }}
-          className="w-full sm:w-auto px-7 py-3 rounded-2xl text-xs font-black btn-glossy-orange flex items-center justify-center gap-2 cursor-pointer shadow-md shrink-0"
-        >
-          <Play className="w-3.5 h-3.5 fill-white" />
-          <span>{isRTL ? 'بدء اختبار الـ CNS الآن' : 'Start CNS Test Now'}</span>
-        </button>
+        {/* Card 2: CNS Test - General Human Anatomy (105 MCQs) */}
+        <div className="rounded-2xl border-2 border-slate-200 bg-white p-5 shadow-xs flex flex-col justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="w-11 h-11 rounded-2xl btn-glossy-orange flex items-center justify-center text-white shrink-0">
+              <Brain className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                <h4 className="text-sm font-extrabold text-slate-900">
+                  {isRTL ? 'اختبار الجهاز العصبي المركزي (105 أسئلة)' : 'CNS Test - Anatomy (105 MCQs)'}
+                </h4>
+                {subjectMasteryMap['general-human-anatomy'] && subjectMasteryMap['general-human-anatomy'].level > 0 && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md bg-orange-100 text-orange-700 border border-orange-200">
+                    <Award className="w-3 h-3 text-orange-500" />
+                    <span>
+                      Lv.{subjectMasteryMap['general-human-anatomy'].level} (
+                      {subjectMasteryMap['general-human-anatomy'].totalCorrect} {isRTL ? 'صحيحة' : 'correct'})
+                    </span>
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                {isRTL
+                  ? 'مرتبط بمادة التشريح البشري العام ومتاح للبدء الفوري لاختبار معلوماتك.'
+                  : 'Linked to General Human Anatomy and ready for instant practice or exam mode.'}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            disabled={loadingSubjectId === 'general-human-anatomy'}
+            onClick={() => {
+              const anat = DENTAL_FACULTY_SUBJECTS.find((s) => s.id === 'general-human-anatomy');
+              if (anat) handleSubjectClick(anat);
+            }}
+            className="w-full py-2.5 px-5 rounded-2xl text-xs font-black btn-glossy-orange flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-70"
+          >
+            {loadingSubjectId === 'general-human-anatomy' ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Play className="w-3.5 h-3.5 fill-white" />
+            )}
+            <span>{isRTL ? 'بدء اختبار الـ CNS الآن (105 أسئلة)' : 'Start CNS Test Now (105 MCQs)'}</span>
+          </button>
+        </div>
       </div>
     </div>
   );

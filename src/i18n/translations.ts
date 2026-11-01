@@ -484,7 +484,7 @@ export const translations: Record<Language, Translations> = {
     footerTagline: 'Randomized MCQ Arena with Buzzer Feedback',
     footerFeature1: '30s Per Question',
     footerFeature2: 'Dental Faculty (First Level)',
-    footerFeature3: 'CNS Test (105 MCQs)',
+    footerFeature3: 'Medical Terminology & CNS (205 MCQs)',
   },
 
   ar: {
@@ -735,7 +735,7 @@ export const translations: Record<Language, Translations> = {
     footerTagline: 'ساحة أسئلة متعددة الخيارات عشوائية مع صفارة إنذار فورية',
     footerFeature1: '30 ثانية لكل سؤال',
     footerFeature2: 'كلية طب الأسنان (المرحلة الأولى)',
-    footerFeature3: 'اختبار الـ CNS (105 أسئلة)',
+    footerFeature3: 'المصطلحات الطبية و CNS (205 أسئلة)',
   },
 };
 

@@ -39,11 +39,14 @@ export function parseQuestionBank(rawText: string): ParseResult {
 
     const uniqueId = `q_${Date.now()}_${questions.length + 1}_${Math.random().toString(36).substring(2, 7)}`;
 
-    // Clean leading question numbering (e.g. "1. ", "105. ")
-    const cleanedQuestionText = currentQuestionText.trim().replace(/^[0-9]+[\.\)\-]\s*/, '');
+    // Clean leading question numbering (e.g. "Question 1: ", "Q1. ", "1. ", "105. ")
+    const cleanedQuestionText = currentQuestionText
+      .trim()
+      .replace(/^(?:question\s*\d+|سؤال\s*\d+|q\d+)[:.]\s*/i, '')
+      .replace(/^[0-9]+[\.\)\-]\s*/, '');
 
     // Clean leading option letters (e.g. "a) ", "b) ", "A) ", "a. ")
-    const cleanedOptions = currentOptions.map((opt) => opt.replace(/^[a-zA-Z][\)\.]\s*/, '').trim());
+    const cleanedOptions = currentOptions.map((opt) => opt.replace(/^[a-zA-Zأ-د][\)\.]\s*/, '').trim());
 
     questions.push({
       id: uniqueId,
@@ -82,6 +85,18 @@ export function parseQuestionBank(rawText: string): ParseResult {
       continue;
     }
 
+    // New question header indicator (e.g. "Question 1: ...", "Q2. ...") when previous question already collected options
+    if (
+      currentQuestionText &&
+      currentOptions.length >= 2 &&
+      trimmed.match(/^(?:question\s*\d+|سؤال\s*\d+|q\d+)[:.]/i)
+    ) {
+      finalizeCurrentQuestion(lineNum);
+      currentQuestionText = trimmed;
+      questionStartLine = lineNum;
+      continue;
+    }
+
     // Empty line indicates boundary between questions
     if (trimmed === '') {
       if (currentQuestionText) {
@@ -95,6 +110,25 @@ export function parseQuestionBank(rawText: string): ParseResult {
       currentQuestionText = trimmed;
       questionStartLine = lineNum;
       continue;
+    }
+
+    // Check if line is an answer indicator (e.g. "Answer: C", "Ans: B", "Correct: A", "الإجابة: ج")
+    const ansMatch = trimmed.match(
+      /^(?:answer|ans|correct(?: answer)?|الإجابة|الجواب|الخيار الصحيح)[:\s]+([a-eA-E]|\d+|[أ-د])/i
+    );
+    if (ansMatch) {
+      const marker = ansMatch[1].trim().toUpperCase();
+      let foundIndex = -1;
+      if (marker === 'A' || marker === '1' || marker === 'أ') foundIndex = 0;
+      else if (marker === 'B' || marker === '2' || marker === 'ب') foundIndex = 1;
+      else if (marker === 'C' || marker === '3' || marker === 'ج') foundIndex = 2;
+      else if (marker === 'D' || marker === '4' || marker === 'د') foundIndex = 3;
+      else if (marker === 'E' || marker === '5' || marker === 'هـ') foundIndex = 4;
+
+      if (foundIndex >= 0) {
+        currentCorrectIndex = foundIndex;
+        continue;
+      }
     }
 
     // Check if line is an explanation
