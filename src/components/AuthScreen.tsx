@@ -1,5 +1,17 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Sparkles, ArrowRight, ArrowLeft, Check, ShieldCheck, Zap, Calendar, AlertCircle } from 'lucide-react';
+import {
+  Mail,
+  Lock,
+  Sparkles,
+  ArrowRight,
+  ArrowLeft,
+  Check,
+  ShieldCheck,
+  Zap,
+  Calendar,
+  AlertCircle,
+  User,
+} from 'lucide-react';
 import { supabase } from '../supabaseClient.js';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -8,6 +20,8 @@ export const AuthScreen: React.FC = () => {
   const { isRTL } = useLanguage();
   const { dailyLoginExpiredNotice, dismissDailyNotice } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -27,11 +41,56 @@ export const AuthScreen: React.FC = () => {
       return;
     }
 
-    if (mode === 'signup' && password !== confirmPassword) {
-      setErrorMessage(
-        isRTL ? 'كلمات المرور غير متطابقة' : 'Passwords do not match'
-      );
-      return;
+    if (mode === 'signup') {
+      const trimmedFirst = firstName.trim();
+      const trimmedLast = lastName.trim();
+
+      // Mandatory validation
+      if (!trimmedFirst) {
+        setErrorMessage(
+          isRTL
+            ? 'الاسم الأول إجباري ويجب إدخاله بالأحرف الإنجليزية فقط'
+            : 'First name is mandatory and must be in English letters only'
+        );
+        return;
+      }
+
+      if (!trimmedLast) {
+        setErrorMessage(
+          isRTL
+            ? 'اسم العائلة إجباري ويجب إدخاله بالأحرف الإنجليزية فقط'
+            : 'Last name is mandatory and must be in English letters only'
+        );
+        return;
+      }
+
+      // English letters only regex: only Latin A-Z, a-z, spaces, hyphens or apostrophes
+      const englishLettersOnlyRegex = /^[A-Za-z]+(?:[' -][A-Za-z]+)*$/;
+
+      if (!englishLettersOnlyRegex.test(trimmedFirst) || trimmedFirst.length < 2) {
+        setErrorMessage(
+          isRTL
+            ? 'يجب أن يتكون الاسم الأول من أحرف إنجليزية فقط (A-Z) ولا يقل عن حرفين'
+            : 'First name must contain English letters only (A-Z) and be at least 2 letters long'
+        );
+        return;
+      }
+
+      if (!englishLettersOnlyRegex.test(trimmedLast) || trimmedLast.length < 2) {
+        setErrorMessage(
+          isRTL
+            ? 'يجب أن يتكون اسم العائلة من أحرف إنجليزية فقط (A-Z) ولا يقل عن حرفين'
+            : 'Last name must contain English letters only (A-Z) and be at least 2 letters long'
+        );
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        setErrorMessage(
+          isRTL ? 'كلمات المرور غير متطابقة' : 'Passwords do not match'
+        );
+        return;
+      }
     }
 
     if (password.length < 6) {
@@ -68,9 +127,20 @@ export const AuthScreen: React.FC = () => {
           }
         }
       } else {
+        const formattedFirstName = firstName.trim();
+        const formattedLastName = lastName.trim();
+        const formattedFullName = `${formattedFirstName} ${formattedLastName}`;
+
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
+          options: {
+            data: {
+              first_name: formattedFirstName,
+              last_name: formattedLastName,
+              full_name: formattedFullName,
+            },
+          },
         });
 
         if (error) {
@@ -91,8 +161,8 @@ export const AuthScreen: React.FC = () => {
           setConfirmPassword('');
           setSuccessMessage(
             isRTL
-              ? 'تم إنشاء حسابك بنجاح. يرجى التحقق من بريدك الإلكتروني وتأكيد عنوانك قبل تسجيل الدخول.'
-              : 'Your account has been created. Please check your email and verify your address before logging in.'
+              ? `تم إنشاء حسابك بنجاح (${formattedFullName}). يرجى التحقق من بريدك الإلكتروني وتأكيد عنوانك قبل تسجيل الدخول.`
+              : `Your account has been created successfully (${formattedFullName}). Please check your email and verify your address before logging in.`
           );
         }
       }
@@ -194,8 +264,63 @@ export const AuthScreen: React.FC = () => {
           </div>
         )}
 
-        {/* SECTION 3: EMAIL & PASSWORD FORM */}
+        {/* SECTION 3: AUTH FORM */}
         <form onSubmit={handleAuthSubmit} className="space-y-4">
+          {/* MANDATORY ENGLISH FIRST & LAST NAME ON SIGN UP */}
+          {mode === 'signup' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-extrabold text-slate-700 text-left rtl:text-right">
+                    {isRTL ? 'الاسم الأول:' : 'First Name:'}
+                  </label>
+                  <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded border border-orange-200">
+                    {isRTL ? 'إنجليزي إجباري' : 'English Only'}
+                  </span>
+                </div>
+                <div className="relative">
+                  <User className="w-4 h-4 text-slate-400 absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    required
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value.replace(/[^a-zA-Z\s'-]/g, ''))}
+                    placeholder="e.g. Ahmed"
+                    className="w-full pl-9 pr-3 rtl:pl-3 rtl:pr-9 py-2.5 text-sm rounded-2xl border-2 border-slate-200 bg-white text-slate-900 focus:outline-none focus:border-orange-500 font-sans"
+                  />
+                </div>
+                <p className="mt-1 text-[10px] text-slate-400 text-left rtl:text-right font-medium">
+                  {isRTL ? 'أحرف إنجليزية فقط (A-Z)' : 'English letters only (A-Z)'}
+                </p>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-extrabold text-slate-700 text-left rtl:text-right">
+                    {isRTL ? 'اسم العائلة:' : 'Last Name:'}
+                  </label>
+                  <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded border border-orange-200">
+                    {isRTL ? 'إنجليزي إجباري' : 'English Only'}
+                  </span>
+                </div>
+                <div className="relative">
+                  <User className="w-4 h-4 text-slate-400 absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    required
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value.replace(/[^a-zA-Z\s'-]/g, ''))}
+                    placeholder="e.g. Ali"
+                    className="w-full pl-9 pr-3 rtl:pl-3 rtl:pr-9 py-2.5 text-sm rounded-2xl border-2 border-slate-200 bg-white text-slate-900 focus:outline-none focus:border-orange-500 font-sans"
+                  />
+                </div>
+                <p className="mt-1 text-[10px] text-slate-400 text-left rtl:text-right font-medium">
+                  {isRTL ? 'أحرف إنجليزية فقط (A-Z)' : 'English letters only (A-Z)'}
+                </p>
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-extrabold text-slate-700 mb-1.5 text-left rtl:text-right">
               {isRTL ? 'البريد الإلكتروني:' : 'Email Address:'}

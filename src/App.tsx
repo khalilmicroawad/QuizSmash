@@ -45,6 +45,22 @@ function QuizSmashApp() {
     setActiveProfile(StorageService.getActiveProfile());
   };
 
+  // Sync profile username with Supabase English full name metadata if available
+  React.useEffect(() => {
+    if (user) {
+      const metaFullName =
+        user.user_metadata?.full_name ||
+        (user.user_metadata?.first_name
+          ? `${user.user_metadata.first_name} ${user.user_metadata.last_name || ''}`.trim()
+          : '');
+      if (metaFullName && activeProfile.username !== metaFullName) {
+        const updated = { ...activeProfile, username: metaFullName };
+        StorageService.saveProfile(updated);
+        setActiveProfile(updated);
+      }
+    }
+  }, [user]);
+
   const handleToggleSound = () => {
     const newState = sound.toggle();
     setSoundEnabled(newState);

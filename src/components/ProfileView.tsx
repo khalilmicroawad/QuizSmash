@@ -72,12 +72,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
             <div className="h-12 w-12 rounded-2xl btn-glossy-orange flex items-center justify-center font-black text-white text-lg shadow-sm shrink-0">
-              {(user?.email?.charAt(0) || activeProfile.username.charAt(0) || 'U').toUpperCase()}
+              {(user?.user_metadata?.first_name?.charAt(0) || user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || activeProfile.username.charAt(0) || 'U').toUpperCase()}
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-lg font-black text-slate-900">
-                  {user?.email?.split('@')[0] || activeProfile.username}
+                  {user?.user_metadata?.full_name || activeProfile.username || user?.email?.split('@')[0]}
                 </h1>
                 {hasSubscription ? (
                   <span className="text-[11px] font-bold text-orange-600 bg-orange-50 px-2.5 py-0.5 rounded-xl border border-orange-200">
