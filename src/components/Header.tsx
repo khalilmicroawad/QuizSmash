@@ -1,8 +1,9 @@
-import React from 'react';
-import { User, Play, Zap, Globe, LogOut, GraduationCap } from 'lucide-react';
+import React, { useState } from 'react';
+import { User, Play, Zap, Globe, LogOut, GraduationCap, Shield } from 'lucide-react';
 import { UserProfile } from '../types/quiz';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import { AdminCodesPortal, ADMIN_EMAIL } from './AdminCodesPortal';
 
 interface HeaderProps {
   currentTab: 'subjects' | 'play' | 'profile' | 'bank';
@@ -20,6 +21,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectTab,
 }) => {
   const { language, toggleLanguage, t, isRTL } = useLanguage();
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
   const {
     user,
     isUnlocked,
@@ -32,7 +34,7 @@ export const Header: React.FC<HeaderProps> = ({
   } = useAuth();
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b-2 border-slate-200 bg-white/95 backdrop-blur-md transition-colors shadow-xs">
+    <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-[#FAF9F6]/95 backdrop-blur-md transition-colors shadow-xs">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
         {/* Brand wordmark with glossy orange rounded icon */}
         <button
@@ -40,9 +42,11 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={() => onSelectTab('subjects')}
           className="flex items-center gap-2 text-base font-black tracking-tight text-slate-900 cursor-pointer hover:opacity-90 transition-opacity"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-b from-orange-400 via-orange-500 to-orange-600 border border-orange-500 border-t-orange-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_2px_6px_rgba(249,115,22,0.3)] text-white">
-            <Zap className="h-4 w-4 fill-white" />
-          </div>
+          <img
+            src="/assets/aistudio/icon_9d2c6e5c.png"
+            alt="Quiz Smash Logo"
+            className="h-8 w-8 rounded-xl object-contain shadow-xs border border-orange-200"
+          />
           <span>
             {isRTL ? (
               <>كويز <span className="text-orange-500">سماش</span></>
@@ -113,17 +117,26 @@ export const Header: React.FC<HeaderProps> = ({
                 </span>
               </span>
 
-              {/* Status Badge */}
-              {isPermanent ? (
-                <span className="text-white bg-gradient-to-b from-orange-400 to-orange-600 px-2.5 py-1 rounded-xl shadow-xs border border-orange-500 font-extrabold text-[11px]">
-                  VIP
-                </span>
-              ) : isTrialActive ? (
+              {/* Status Badge (VIP button removed) */}
+              {isTrialActive && (
                 <span className="text-sky-700 bg-sky-50 px-2.5 py-1 rounded-xl border border-sky-200 font-mono text-[11px] font-bold">
                   {timeLeftFormatted}
                 </span>
-              ) : null}
+              )}
             </div>
+          )}
+
+          {/* Owner Codes Portal (Strictly visible only for dr.khalil.awad@gmail.com) */}
+          {user && user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() && (
+            <button
+              type="button"
+              onClick={() => setIsAdminOpen(true)}
+              title={isRTL ? 'مستودع الأكواد (المالك د. خليل)' : 'Owner Codes Bank'}
+              className="flex h-8 items-center gap-1.5 px-2.5 rounded-xl bg-slate-900 text-amber-400 border border-slate-700 hover:bg-slate-800 transition-colors font-bold text-xs cursor-pointer shadow-xs"
+            >
+              <Shield className="h-3.5 w-3.5 text-amber-400" />
+              <span className="hidden sm:inline">{isRTL ? 'أكواد المالك' : 'Owner Codes'}</span>
+            </button>
           )}
 
           {/* Language Switcher */}
@@ -138,8 +151,8 @@ export const Header: React.FC<HeaderProps> = ({
             <span>{language === 'en' ? 'العربية' : 'English'}</span>
           </button>
 
-          {/* Sign Out */}
-          {user && (
+          {/* Sign Out (Visible in header when unlocked; on PaywallView it is down of the page) */}
+          {user && isUnlocked && (
             <button
               type="button"
               onClick={() => signOutUser()}
@@ -194,6 +207,12 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </div>
       )}
+
+      {/* Owner Private Code Bank Modal */}
+      <AdminCodesPortal
+        isOpen={isAdminOpen}
+        onClose={() => setIsAdminOpen(false)}
+      />
     </header>
   );
 };

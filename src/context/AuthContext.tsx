@@ -1,6 +1,13 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../supabaseClient.js';
+import {
+  COURSE_1_ACCESS_CODES_100,
+  normalizeAccessCode,
+  isCourse1AccessCode,
+  is13FigureFormat,
+} from '../data/course1Codes';
+import { CourseCodeService } from '../services/courseCodeService';
 
 export interface AccessState {
   isUnlocked: boolean;
@@ -9,6 +16,7 @@ export interface AccessState {
   firstActivatedAt: number | null;
   trialExpiresAt: number | null;
   lastCodeUsed?: string;
+  allowedCourse?: string; // e.g. 'stage-1'
   maxLogins: number; // 100 logins
   usedLogins: number; // Counter of times user used service
   lastLoginDateString?: string; // YYYY-MM-DD
@@ -20,6 +28,7 @@ interface AuthContextType {
   isUnlocked: boolean;
   isPermanent: boolean;
   hasSubscription: boolean;
+  allowedCourse?: string;
   isTrialActive: boolean;
   trialExpiresAt: number | null;
   timeLeftFormatted: string;
@@ -31,11 +40,14 @@ interface AuthContextType {
   dismissDailyNotice: () => void;
   ownerWhatsApp: string;
   isLoading: boolean;
-  submitAccessCode: (code: string) => { success: boolean; type: 'trial' | 'subscription' | 'invalid'; message: string };
-  activate2DayTrial: (code?: string) => void;
-  activate24HourTrial: (code?: string) => void; // Backward compatibility alias
-  unlockSubscription100: (code?: string) => void;
-  unlockPermanent: (code?: string) => void; // Backward compatibility alias
+  submitAccessCode: (
+    code: string,
+    targetCourseId?: string
+  ) => Promise<{ success: boolean; type: 'trial' | 'subscription' | 'invalid'; message: string }>;
+  activate2DayTrial: (code?: string, targetCourseId?: string) => void;
+  activate24HourTrial: (code?: string, targetCourseId?: string) => void; // Backward compatibility alias
+  unlockSubscription100: (code?: string, targetCourseId?: string) => void;
+  unlockPermanent: (code?: string, targetCourseId?: string) => void; // Backward compatibility alias
   setOwnerWhatsApp: (phone: string) => void;
   lockApp: () => void;
   signOutUser: () => Promise<void>;
@@ -354,13 +366,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return `${minutes}m ${seconds}s`;
   };
 
-  // Submit code logic (Supports 100-login subscription & 2-day trial)
-  const submitAccessCode = (rawCode: string) => {
+  // Submit code logic (Supports 100 13-figure codes for Course 1, subscription, & trial)
+  const submitAccessCode = async (rawCode: string, targetCourseId?: string) => {
+    const cleaned = normalizeAccessCode(rawCode);
     const code = rawCode.trim().toUpperCase();
     const now = Date.now();
     const today = getTodayDateString();
 
-    // Check 100-Login Subscription Codes
+    // 1. Check if input is a 13-figure code or in Course 1 codes list
+    if (is13FigureFormat(cleaned) || isCourse1AccessCode(cleaned)) {
+      const validation = await CourseCodeService.validateAndRedeemCode(
+        cleaned,
+        targetCourseId || 'stage-1',
+        user?.id,
+        user?.email
+      );
+
+      if (!validation.isValid) {
+        return {
+          success: false,
+          type: 'invalid' as const,
+          message: validation.errorMessage || 'الكود غير صالح.',
+        };
+      }
+
+      const currentUsed = access.usedLogins > 0 ? access.usedLogins : 1;
+      const newState: AccessState = {
+        isUnlocked: true,
+        isPermanent: true,
+        hasSubscription: true,
+        allowedCourse: 'stage-1',
+        firstActivatedAt: access.firstActivatedAt || now,
+        trialExpiresAt: null,
+        lastCodeUsed: cleaned,
+        maxLogins: 100,
+        usedLogins: currentUsed,
+        lastLoginDateString: today,
+        lastLoginTimestamp: now,
+      };
+
+      if (user?.id) {
+        sessionStorage.setItem(`quiz_smash_session_day_${user.id}`, today);
+      }
+      saveAccess(newState);
+
+      return {
+        success: true,
+        type: 'subscription' as const,
+        message: 'تم تفعيل كود المرحلة الأولى (100 تسجيل دخول) بنجاح! تم فتح أسئلة المرحلة الأولى.',
+      };
+    }
+
+    // 2. Check 100-Login Subscription Codes
     if (
       SUBSCRIPTION_CODES.includes(code) ||
       code.startsWith('SUB-') ||
@@ -368,11 +425,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       code.startsWith('PAID-') ||
       code.startsWith('CODE100-')
     ) {
+      if (targetCourseId && targetCourseId !== 'stage-1') {
+        return {
+          success: false,
+          type: 'invalid' as const,
+          message: 'عذراً! هذا الكود مخصص للمرحلة الأولى فقط، ولا يمكن استخدامه للمراحل الأخرى.',
+        };
+      }
+
       const currentUsed = access.usedLogins > 0 ? access.usedLogins : 1;
       const newState: AccessState = {
         isUnlocked: true,
         isPermanent: true,
         hasSubscription: true,
+        allowedCourse: 'stage-1',
         firstActivatedAt: access.firstActivatedAt || now,
         trialExpiresAt: null,
         lastCodeUsed: code,
@@ -394,12 +460,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     }
 
-    // Check 2-Day (48-Hour) Free Trial Codes
+    // 3. Check 2-Day (48-Hour) Free Trial Codes
     if (TRIAL_CODES.includes(code) || code.startsWith('TRIAL-') || code.startsWith('FREE-')) {
       const newState: AccessState = {
         isUnlocked: true,
         isPermanent: false,
         hasSubscription: false,
+        allowedCourse: 'stage-1',
         firstActivatedAt: access.firstActivatedAt || now,
         trialExpiresAt: now + DURATION_48_HOURS_MS,
         lastCodeUsed: code,
@@ -417,24 +484,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return {
         success: true,
         type: 'trial' as const,
-        message: 'تم تفعيل التجربة المجانية لمدة يومين (48 ساعة) بنجاح!',
+        message: 'تم تفعيل التجربة المجانية لمدة يومين (48 ساعة) بنجاح للمرحلة الأولى!',
       };
     }
 
     return {
       success: false,
       type: 'invalid' as const,
-      message: 'الكود غير صحيح. يرجى التأكد من الكود أو التواصل عبر واتساب للحصول على كود اشتراك 100 تسجيل دخول.',
+      message: 'الكود غير صحيح. يرجى إدخال أحد أكواد الـ 13 رقماً المخصصة للمرحلة الأولى (100 تسجيل دخول).',
     };
   };
 
-  const activate2DayTrial = (code = 'FREE_TRIAL_2DAYS') => {
+  const activate2DayTrial = (code = 'FREE_TRIAL_2DAYS', targetCourseId = 'stage-1') => {
     const now = Date.now();
     const today = getTodayDateString();
     const newState: AccessState = {
       isUnlocked: true,
       isPermanent: false,
       hasSubscription: false,
+      allowedCourse: targetCourseId,
       firstActivatedAt: now,
       trialExpiresAt: now + DURATION_48_HOURS_MS,
       lastCodeUsed: code,
@@ -450,17 +518,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Backward compatibility alias
-  const activate24HourTrial = (code?: string) => {
-    activate2DayTrial(code);
+  const activate24HourTrial = (code?: string, targetCourseId?: string) => {
+    activate2DayTrial(code, targetCourseId);
   };
 
-  const unlockSubscription100 = (code = 'SUB_100_LOGINS') => {
+  const unlockSubscription100 = (code = 'SUB_100_LOGINS', targetCourseId = 'stage-1') => {
     const now = Date.now();
     const today = getTodayDateString();
     const newState: AccessState = {
       isUnlocked: true,
       isPermanent: true,
       hasSubscription: true,
+      allowedCourse: targetCourseId,
       firstActivatedAt: access.firstActivatedAt || now,
       trialExpiresAt: null,
       lastCodeUsed: code,
@@ -475,8 +544,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     saveAccess(newState);
   };
 
-  const unlockPermanent = (code?: string) => {
-    unlockSubscription100(code);
+  const unlockPermanent = (code?: string, targetCourseId?: string) => {
+    unlockSubscription100(code, targetCourseId);
   };
 
   const lockApp = () => {
@@ -548,6 +617,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isUnlocked,
         isPermanent,
         hasSubscription,
+        allowedCourse: access.allowedCourse,
         isTrialActive,
         trialExpiresAt: access.trialExpiresAt,
         timeLeftFormatted: formatTimeLeft(secondsRemaining),

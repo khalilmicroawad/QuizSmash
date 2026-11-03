@@ -11,6 +11,7 @@ import {
   Zap,
   Calendar,
   ShieldCheck,
+  Shield,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -24,6 +25,7 @@ import {
 import { UserProfile } from '../types/quiz';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import { AdminCodesPortal, ADMIN_EMAIL } from './AdminCodesPortal';
 
 interface ProfileViewProps {
   activeProfile: UserProfile;
@@ -36,6 +38,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onStartQuiz,
 }) => {
   const { t, isRTL } = useLanguage();
+  const [isAdminOpen, setIsAdminOpen] = React.useState(false);
   const {
     user,
     isPermanent,
@@ -84,8 +87,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     {isRTL ? 'اشتراك 100 دخول' : '100-Login Subscription'}
                   </span>
                 ) : isPermanent ? (
-                  <span className="text-[11px] font-bold text-orange-600 bg-orange-50 px-2.5 py-0.5 rounded-xl border border-orange-200">
-                    VIP 20,000 IQD
+                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-xl border border-emerald-200">
+                    {isRTL ? 'اشتراك مفعل' : 'Active Subscription'}
                   </span>
                 ) : isTrialActive ? (
                   <span className="text-[11px] font-bold text-sky-600 bg-sky-50 px-2.5 py-0.5 rounded-xl border border-sky-200 font-mono">
@@ -107,6 +110,39 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </button>
         </div>
       </div>
+
+      {/* OWNER CODES BANK CARD (EXCLUSIVELY FOR DR. KHALIL) */}
+      {user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() && (
+        <div className="mt-4 rounded-2xl border-2 border-slate-900 bg-slate-900 text-white p-5 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-orange-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <Shield className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-black text-white">
+                  {isRTL ? 'مستودع أكواد المرحلة الأولى (100 كود)' : 'Course 1 Code Bank (100 Codes)'}
+                </h3>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                  {isRTL ? 'خاص بالمالك' : 'Owner Only'}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 mt-0.5">
+                {isRTL
+                  ? 'الأكواد الـ 100 المكونة من 13 رقماً محفوظة هنا بأمان لنسخها وإرسالها للطلاب.'
+                  : 'Your 100 13-figure codes are stored here securely for distribution to students.'}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsAdminOpen(true)}
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black cursor-pointer shrink-0 transition-colors shadow-xs"
+          >
+            {isRTL ? 'فتح مستودع الأكواد' : 'Open Codes Bank'}
+          </button>
+        </div>
+      )}
 
       {/* SECTION 1.5: SUBSCRIPTION USAGE & DAILY LOGIN CARD */}
       <div className="mt-4 rounded-2xl border-2 border-slate-200 bg-white p-5 shadow-xs">
@@ -227,6 +263,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Owner Private Code Bank Modal */}
+      <AdminCodesPortal
+        isOpen={isAdminOpen}
+        onClose={() => setIsAdminOpen(false)}
+      />
     </div>
   );
 };

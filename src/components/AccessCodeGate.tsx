@@ -1,10 +1,32 @@
 import React, { useState } from 'react';
-import { KeyRound, Sparkles, MessageCircle, Timer, Settings, Check, Zap, ShieldCheck } from 'lucide-react';
+import {
+  KeyRound,
+  MessageCircle,
+  Timer,
+  Settings,
+  Check,
+  Zap,
+  ShieldCheck,
+  LogOut,
+  BookOpen,
+  ArrowRight,
+  ArrowLeft,
+} from 'lucide-react';
 import { useAuth, PRICE_IQD, MAX_SUBSCRIPTION_LOGINS } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { CourseStage } from './CourseSelectionView';
 
-export const AccessCodeGate: React.FC = () => {
+interface AccessCodeGateProps {
+  selectedCourse?: CourseStage | null;
+  onBackToCourses?: () => void;
+}
+
+export const AccessCodeGate: React.FC<AccessCodeGateProps> = ({
+  selectedCourse,
+  onBackToCourses,
+}) => {
   const {
+    user,
     submitAccessCode,
     activate2DayTrial,
     ownerWhatsApp,
@@ -12,6 +34,7 @@ export const AccessCodeGate: React.FC = () => {
     usedLogins,
     maxLogins,
     remainingLogins,
+    signOutUser,
   } = useAuth();
   const { isRTL } = useLanguage();
 
@@ -20,27 +43,49 @@ export const AccessCodeGate: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [phoneInput, setPhoneInput] = useState(ownerWhatsApp);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const userEmail = user?.email || '';
+  const fullName = user?.user_metadata?.full_name || '';
+
+  const courseId = selectedCourse?.id || 'stage-1';
+  const courseName = isRTL
+    ? selectedCourse?.nameAr || 'المرحلة الأولى (كلية طب الأسنان)'
+    : selectedCourse?.nameEn || 'First Course (First Level)';
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
 
     if (!inputCode.trim()) {
-      setErrorMessage(isRTL ? 'يرجى إدخال كود الاشتراك أو التفعيل.' : 'Please enter a subscription code.');
+      setErrorMessage(
+        isRTL
+          ? 'يرجى إدخال كود الاشتراك المكون من 13 رقماً للمرحلة الأولى.'
+          : 'Please enter the 13-figure access code for Course 1.'
+      );
       return;
     }
 
-    const result = submitAccessCode(inputCode);
-    if (result.success) {
-      setSuccessMessage(result.message);
-    } else {
-      setErrorMessage(result.message);
+    setIsSubmitting(true);
+    try {
+      const result = await submitAccessCode(inputCode, courseId);
+      if (result.success) {
+        setSuccessMessage(result.message);
+      } else {
+        setErrorMessage(result.message);
+      }
+    } catch {
+      setErrorMessage(
+        isRTL ? 'حدث خطأ أثناء التحقق من الكود.' : 'Error checking code. Please try again.'
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleStartTrial = () => {
-    activate2DayTrial();
+    activate2DayTrial('FREE_TRIAL_2DAYS', courseId);
   };
 
   const handleSavePhone = (e: React.FormEvent) => {
@@ -51,15 +96,34 @@ export const AccessCodeGate: React.FC = () => {
 
   const whatsappMessage = encodeURIComponent(
     isRTL
-      ? `مرحباً، أود الحصول على كود اشتراك تطبيق كويز سماش (100 تسجيل دخول) مقابل ${PRICE_IQD}. ما هي طريقة الدفع؟`
-      : `Hello! I would like to purchase the 100-login subscription code for Quiz Smash (${PRICE_IQD}). What is the payment method?`
+      ? `مرحباً دكتور، أود الحصول على كود اشتراك كويز سماش (100 تسجيل دخول للمرحلة الأولى) مقابل ${PRICE_IQD}.\n\nالمرحلة الدراسية:\n${courseName}\n\nالحساب:\n${fullName || userEmail || 'حساب طالب'}`
+      : `Hello! I would like to purchase the 100-login code for Quiz Smash (Course 1) for ${PRICE_IQD}.\n\nCourse:\n${courseName}\n\nAccount:\n${fullName || userEmail || 'Student'}`
   );
 
   const whatsappUrl = `https://wa.me/${ownerWhatsApp}?text=${whatsappMessage}`;
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-white">
-      <div className="w-full max-w-md mx-auto bg-white border-2 border-slate-200 rounded-3xl shadow-xl p-6 sm:p-8 relative text-center text-slate-900">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-white overflow-x-hidden w-full select-none">
+      <div className="w-full max-w-md mx-auto bg-white border-2 border-slate-200 rounded-3xl shadow-xl p-5 sm:p-7 relative text-slate-900 overflow-hidden touch-pan-y">
+        {/* COURSE BADGE & SWITCH LINK */}
+        <div className="mb-3 flex items-center justify-between text-xs">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-orange-50 border border-orange-200 text-orange-700 font-extrabold text-[11px]">
+            <BookOpen className="w-3.5 h-3.5 text-orange-500" />
+            <span>{courseName}</span>
+          </div>
+
+          {onBackToCourses && (
+            <button
+              type="button"
+              onClick={onBackToCourses}
+              className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 hover:text-orange-600 transition-colors cursor-pointer"
+            >
+              <span>{isRTL ? 'تغيير المرحلة' : 'Change Course'}</span>
+              {isRTL ? <ArrowLeft className="w-3 h-3" /> : <ArrowRight className="w-3 h-3" />}
+            </button>
+          )}
+        </div>
+
         {/* SECTION 1: BRAND HEADER */}
         <div className="text-center">
           <div className="mx-auto w-14 h-14 rounded-2xl btn-glossy-orange flex items-center justify-center shadow-md mb-3 text-white">
@@ -76,16 +140,16 @@ export const AccessCodeGate: React.FC = () => {
 
           <p className="mt-1.5 text-xs text-slate-600 max-w-xs mx-auto leading-relaxed">
             {isRTL
-              ? 'ابدأ التجربة المجانية لمدة يومين (48 ساعة) أو أدخل كود اشتراك 100 تسجيل دخول.'
-              : 'Start your 2-day free trial (48 hours) or enter your 100-login subscription code.'}
+              ? 'أدخل كود الاشتراك (13 رقماً) المخصص للمرحلة الأولى للحصول على 100 تسجيل دخول، أو ابدأ التجربة المجانية.'
+              : 'Enter your 13-figure Course 1 activation code (100 logins) or start your 2-day free trial.'}
           </p>
         </div>
 
-        {/* SECTION 1.5: SERVICE USAGE COUNTER (IF ACTIVE) */}
+        {/* SERVICE USAGE COUNTER (IF ACTIVE) */}
         {usedLogins > 0 && (
           <div className="mt-4 p-3 rounded-2xl bg-orange-50/70 border border-orange-200 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-orange-500 fill-orange-500" />
+              <Zap className="w-4 h-4 text-orange-500 fill-orange-500 shrink-0" />
               <div className="text-left rtl:text-right">
                 <div className="text-[10px] font-extrabold uppercase text-orange-800">
                   {isRTL ? 'رصيد استخدام الخدمة' : 'Service Usage Counter'}
@@ -97,78 +161,80 @@ export const AccessCodeGate: React.FC = () => {
                 </div>
               </div>
             </div>
-            <span className="font-mono text-xs font-black px-2 py-1 rounded-xl bg-white border border-orange-200 text-orange-600">
+            <span className="font-mono text-xs font-black px-2 py-1 rounded-xl bg-white border border-orange-200 text-orange-600 shrink-0">
               {remainingLogins} {isRTL ? 'متبقي' : 'left'}
             </span>
           </div>
         )}
 
         {/* LINE SEPARATING HEADER FROM TRIAL SECTION */}
-        <div className="w-full border-b-2 border-slate-200 my-5" />
+        <div className="w-full border-b-2 border-slate-200 my-4" />
 
         {/* SECTION 2: 2-DAY FREE TRIAL (48 HOURS) */}
         <div>
           <button
             type="button"
             onClick={handleStartTrial}
-            className="w-full py-3.5 px-4 rounded-2xl btn-glossy-orange text-sm flex items-center justify-center gap-2 cursor-pointer shadow-md"
+            className="w-full py-3 px-4 rounded-2xl btn-glossy-orange text-sm flex items-center justify-center gap-2 cursor-pointer shadow-md"
           >
             <Timer className="w-5 h-5" />
             <span>{isRTL ? 'بدء تجربة مجانية (يومان / 48 ساعة)' : 'Start 2-Day Free Trial (48 Hours)'}</span>
           </button>
-          <p className="mt-1.5 text-[11px] text-slate-500">
+          <p className="mt-1.5 text-[11px] text-slate-500 text-center">
             {isRTL
-              ? 'تتيح لك حل جميع أسئلة اختبار الجهاز العصبي (105 أسئلة) مجاناً لمدة يومين.'
-              : 'Practice all 105 CNS Test questions free for 48 hours.'}
+              ? 'تتيح لك حل جميع أسئلة المرحلة الأولى (الحاسوب 175، والتشريح، والمصطلحات) مجاناً.'
+              : 'Practice all Course 1 MCQs (175 Computer, Anatomy, Terminology) free for 48h.'}
           </p>
         </div>
 
         {/* LINE SEPARATING TRIAL FROM CODE ENTRY SECTION */}
-        <div className="w-full border-b-2 border-slate-200 my-5" />
+        <div className="w-full border-b-2 border-slate-200 my-4" />
 
-        {/* SECTION 3: SUBSCRIPTION CODE (100 LOGINS) */}
+        {/* SECTION 3: 13-FIGURE SUBSCRIPTION CODE (100 LOGINS) */}
         <div>
-          <div className="text-xs uppercase tracking-wider font-extrabold text-slate-500 mb-1.5 flex items-center justify-center gap-1.5">
+          <div className="text-xs uppercase tracking-wider font-extrabold text-slate-700 flex items-center justify-center gap-1.5 mb-2">
             <ShieldCheck className="w-4 h-4 text-orange-500" />
-            <span>{isRTL ? 'كود اشتراك (100 تسجيل دخول):' : 'Subscription Code (100 Logins):'}</span>
+            <span>{isRTL ? 'كود الاشتراك (13 رقماً - 100 دخول):' : 'Access Code (13 Figures - 100 Logins):'}</span>
           </div>
-          <p className="text-[11px] text-slate-500 mb-3">
-            {isRTL
-              ? 'يمنحك الكود 100 مرة تسجيل دخول للخدمة مع تجديد الدخول اليومي الإجباري.'
-              : 'Grants 100 service logins with mandatory daily re-login security.'}
-          </p>
 
-          <form onSubmit={handleSubmit} className="flex gap-2.5">
+          <form onSubmit={handleSubmit} className="flex gap-2">
             <input
               type="text"
               value={inputCode}
               onChange={(e) => setInputCode(e.target.value)}
-              placeholder={isRTL ? 'كود الاشتراك (مثال: SUB100)' : 'Code (e.g. SUB100)'}
-              className="flex-1 px-4 py-2.5 text-xs font-mono uppercase tracking-wider rounded-2xl border-2 border-slate-200 bg-white text-slate-900 focus:outline-none focus:border-orange-500 text-center font-bold"
+              placeholder={isRTL ? 'أدخل كود الـ 13 رقماً' : 'Enter 13-figure code'}
+              className="flex-1 px-3 py-2.5 text-xs font-mono uppercase tracking-wider rounded-xl border-2 border-slate-200 bg-white text-slate-900 focus:outline-none focus:border-orange-500 text-center font-bold"
             />
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-2xl btn-glossy-orange text-xs cursor-pointer font-bold"
+              disabled={isSubmitting}
+              className="px-5 py-2.5 rounded-xl btn-glossy-orange text-xs cursor-pointer font-bold shrink-0 disabled:opacity-50"
             >
-              {isRTL ? 'تفعيل' : 'Unlock'}
+              {isSubmitting ? (isRTL ? 'جاري التحقق...' : 'Checking...') : (isRTL ? 'تفعيل' : 'Unlock')}
             </button>
           </form>
 
+          <p className="mt-1.5 text-[10px] text-slate-500 text-center">
+            {isRTL
+              ? 'ملاحظة: هذا الكود مخصص للمرحلة الأولى فقط ولا يمكن استخدامه للمراحل الأخرى.'
+              : 'Notice: This code works strictly for Course 1 (First Level) and not other courses.'}
+          </p>
+
           {errorMessage && (
-            <p className="mt-3 text-xs text-rose-700 font-bold bg-rose-50 p-2.5 rounded-2xl border-2 border-rose-300">
+            <p className="mt-2 text-xs text-rose-700 font-bold bg-rose-50 p-2.5 rounded-xl border-2 border-rose-300">
               {errorMessage}
             </p>
           )}
 
           {successMessage && (
-            <p className="mt-3 text-xs text-emerald-800 font-bold bg-emerald-50 p-2.5 rounded-2xl border-2 border-emerald-300 flex items-center justify-center gap-1.5">
+            <p className="mt-2 text-xs text-emerald-800 font-bold bg-emerald-50 p-2.5 rounded-xl border-2 border-emerald-300 flex items-center justify-center gap-1.5">
               <Check className="w-4 h-4 text-emerald-600" /> {successMessage}
             </p>
           )}
         </div>
 
         {/* LINE SEPARATING CODE ENTRY FROM WHATSAPP SECTION */}
-        <div className="w-full border-b-2 border-slate-200 my-5" />
+        <div className="w-full border-b-2 border-slate-200 my-4" />
 
         {/* SECTION 4: DIRECT WHATSAPP LINK FOR SUBSCRIPTION */}
         <div>
@@ -176,7 +242,7 @@ export const AccessCodeGate: React.FC = () => {
             href={whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full py-3 px-4 rounded-2xl btn-glossy-orange-outline text-xs font-extrabold flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-3 px-4 rounded-2xl btn-glossy-orange-outline text-xs font-black flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
           >
             <MessageCircle className="w-4 h-4" />
             <span>
@@ -185,40 +251,62 @@ export const AccessCodeGate: React.FC = () => {
                 : `Get 100-Login Code via WhatsApp (${PRICE_IQD})`}
             </span>
           </a>
+          <p className="mt-1 text-[10px] text-slate-400 text-center">
+            {isRTL
+              ? `الرقم المعتمد: ${ownerWhatsApp}`
+              : `Pre-configured payment: ${ownerWhatsApp}`}
+          </p>
         </div>
 
         {/* LINE SEPARATING WHATSAPP FROM SETTINGS SECTION */}
-        <div className="w-full border-b-2 border-slate-200 my-5" />
+        <div className="w-full border-b-2 border-slate-200 my-4" />
 
         {/* SECTION 5: WHATSAPP SETTINGS */}
-        <div className="flex flex-col items-center justify-center text-xs text-slate-500">
+        <div className="flex flex-col items-center justify-center text-xs text-slate-500 mb-3">
           <button
             type="button"
             onClick={() => setShowSettings(!showSettings)}
-            className="inline-flex items-center gap-1.5 text-slate-600 hover:text-orange-600 font-bold transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 text-slate-500 hover:text-orange-600 font-bold transition-colors cursor-pointer text-[11px]"
           >
             <Settings className="w-3.5 h-3.5" />
             <span>{isRTL ? 'تعديل رقم واتساب المستلم' : 'Edit WhatsApp Number'}</span>
           </button>
 
           {showSettings && (
-            <form onSubmit={handleSavePhone} className="mt-3 w-full p-3 bg-slate-50 rounded-2xl border-2 border-slate-200 text-xs">
+            <form onSubmit={handleSavePhone} className="mt-2.5 w-full p-3 bg-slate-50 rounded-2xl border-2 border-slate-200 text-xs">
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={phoneInput}
                   onChange={(e) => setPhoneInput(e.target.value)}
                   placeholder="9647700000000"
-                  className="flex-1 px-3 py-2 rounded-xl border border-slate-300 bg-white text-slate-900 font-mono text-xs focus:outline-none focus:border-orange-500"
+                  className="flex-1 px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-slate-900 font-mono text-xs focus:outline-none focus:border-orange-500"
                 />
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl btn-glossy-orange text-xs font-bold cursor-pointer"
+                  className="px-3 py-1.5 rounded-xl btn-glossy-orange text-xs font-bold cursor-pointer"
                 >
                   {isRTL ? 'حفظ' : 'Save'}
                 </button>
               </div>
             </form>
+          )}
+        </div>
+
+        {/* SECTION 6: LOG OUT BUTTON DOWN OF THE PAGE */}
+        <div className="pt-2 border-t border-slate-100 flex flex-col items-center justify-center">
+          <button
+            type="button"
+            onClick={() => signOutUser()}
+            className="w-full py-2.5 px-4 rounded-2xl border-2 border-slate-200 bg-slate-50 hover:bg-rose-50 hover:border-rose-300 text-slate-600 hover:text-rose-600 font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-xs active:scale-[0.99]"
+          >
+            <LogOut className="w-4 h-4 text-slate-500 group-hover:text-rose-600" />
+            <span>{isRTL ? 'تسجيل الخروج من الحساب' : 'Log Out of Account'}</span>
+          </button>
+          {userEmail && (
+            <p className="mt-1 text-[10px] text-slate-400 font-mono truncate max-w-full">
+              {userEmail}
+            </p>
           )}
         </div>
       </div>

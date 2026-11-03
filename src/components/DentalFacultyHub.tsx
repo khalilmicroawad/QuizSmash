@@ -22,6 +22,7 @@ import {
   Target,
   BookMarked,
   FileText,
+  Monitor,
 } from 'lucide-react';
 import { DentalSubject, DENTAL_FACULTY_SUBJECTS } from '../data/dentalSubjects';
 import { useLanguage } from '../context/LanguageContext';
@@ -29,8 +30,10 @@ import { useAuth } from '../context/AuthContext';
 import { Question, UserProfile } from '../types/quiz';
 import { fetchCnsTestQuestions } from '../services/cnsTestService';
 import { fetchTerminologyTestQuestions } from '../services/terminologyTestService';
+import { fetchComputerTestQuestions } from '../services/computerTestService';
 import { MasteryService, SubjectMasteryInfo } from '../services/masteryService';
 import { StorageService } from '../services/storageService';
+import { ComputerSectionsModal } from './ComputerSectionsModal';
 
 interface DentalFacultyHubProps {
   onSelectSubject: (subject: DentalSubject) => void;
@@ -51,6 +54,7 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
   const { timeLeftFormatted, isTrialActive, usedLogins, maxLogins, remainingLogins } = useAuth();
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('medical-terminology');
   const [loadingSubjectId, setLoadingSubjectId] = useState<string | null>(null);
+  const [isComputerModalOpen, setIsComputerModalOpen] = useState<boolean>(false);
   const [notice, setNotice] = useState<{ message: string; type: 'info' | 'success' } | null>(null);
 
   // Fallback to active profile in storage if not passed
@@ -83,6 +87,8 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
         return <FlaskConical className="w-6 h-6 text-orange-500" />;
       case 'medical-physics':
         return <Atom className="w-6 h-6 text-orange-500" />;
+      case 'computer':
+        return <Monitor className="w-6 h-6 text-orange-500" />;
       default:
         return <BookOpen className="w-6 h-6 text-orange-500" />;
     }
@@ -109,7 +115,11 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
     setSelectedSubjectId(subject.id);
     onSelectSubject(subject);
 
-    if (subject.id === 'medical-terminology') {
+    if (subject.id === 'computer') {
+      // Computer button opens the 7 sections modal (1-25, 26-50, 51-75, 76-100, 100-125, 126-150, 151-175)
+      setIsComputerModalOpen(true);
+      return;
+    } else if (subject.id === 'medical-terminology') {
       // Medical Terminology (Loads 100 MCQs from Terminology.txt link)
       setLoadingSubjectId('medical-terminology');
       try {
@@ -156,8 +166,8 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
       setNotice({
         type: 'info',
         message: isRTL
-          ? `مادة ${subject.nameAr} جاهزة للربط مع بنك أسئلة الـ MCQ قريباً. يمكنك التدريب على المصطلحات الطبية (100 سؤال) أو تشريح الجهاز العصبي (105 أسئلة) حالياً!`
-          : `${subject.nameEn} is configured and ready for MCQs attachment. You can practice Medical Terminology (100 MCQs) or CNS Test (105 MCQs) now!`,
+          ? `مادة ${subject.nameAr} جاهزة للربط مع بنك أسئلة الـ MCQ قريباً. يمكنك التدريب على الحاسوب (60 سؤال) أو المصطلحات الطبية (100 سؤال) أو تشريح الجهاز العصبي (105 أسئلة) حالياً!`
+          : `${subject.nameEn} is configured and ready for MCQs attachment. You can practice Computer (60 MCQs), Medical Terminology (100 MCQs), or CNS Test (105 MCQs) now!`,
       });
     }
   };
@@ -175,7 +185,7 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
               </span>
               <span className="text-slate-300">·</span>
               <span className="text-xs font-bold text-sky-600">
-                {isRTL ? '6 مواد دراسية معتمدة' : '6 Core Dental Subjects'}
+                {isRTL ? '7 مواد دراسية معتمدة' : '7 Core Dental Subjects'}
               </span>
               {isTrialActive && (
                 <>
@@ -564,6 +574,22 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
           </button>
         </div>
       </div>
+
+      {/* COMPUTER 7 SECTIONS MODAL */}
+      <ComputerSectionsModal
+        isOpen={isComputerModalOpen}
+        onClose={() => setIsComputerModalOpen(false)}
+        onQuestionsLoaded={(newQuestions, sectionName) => {
+          onQuestionsUpdated(newQuestions);
+          setNotice({
+            type: 'success',
+            message: isRTL
+              ? `تم تحميل ${newQuestions.length} سؤال لـ (${sectionName}) بنجاح!`
+              : `Loaded ${newQuestions.length} MCQs for (${sectionName}) successfully!`,
+          });
+          onLaunchQuiz();
+        }}
+      />
     </div>
   );
 };

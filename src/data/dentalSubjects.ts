@@ -83,4 +83,17 @@ export const DENTAL_FACULTY_SUBJECTS: DentalSubject[] = [
     badgeEn: 'Ready for MCQs',
     badgeAr: 'جاهز لربط الأسئلة',
   },
+  {
+    id: 'computer',
+    nameEn: 'Computer',
+    nameAr: 'الحاسوب والبرمجيات',
+    code: 'COMP 107',
+    descriptionEn: 'Computer essentials, hardware, operating systems, dental practice software, networking, and digital literacy.',
+    descriptionAr: 'أساسيات الحاسوب، العتاد ونظم التشغيل، برمجيات عيادات طب الأسنان، والمهارات الرقمية.',
+    hasQuestions: true,
+    questionCount: 60,
+    badgeEn: '60 MCQs (Computer Active)',
+    badgeAr: '60 سؤال (حاسوب نشط)',
+    supabaseFileUrl: 'https://zmsovxqdbhqthluoznmz.supabase.co/storage/v1/object/public/Quizsmashlib/comp%20mcq%20(1-53).txt',
+  },
 ];

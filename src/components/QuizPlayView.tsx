@@ -19,6 +19,9 @@ import {
   Volume2,
   VolumeX,
   Brain,
+  X,
+  Trophy,
+  Monitor,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Question, QuizSettings, QuizAttempt, QuestionResult, UserProfile } from '../types/quiz';
@@ -27,6 +30,7 @@ import { StorageService } from '../services/storageService';
 import { getTimerDifficulty, calculateQuestionScore, FIXED_TIMER_SECONDS } from '../services/scoringService';
 import { useLanguage } from '../context/LanguageContext';
 import { fetchCnsTestQuestions } from '../services/cnsTestService';
+import { fetchComputerTestQuestions } from '../services/computerTestService';
 
 interface QuizPlayViewProps {
   questions: Question[];
@@ -55,8 +59,8 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
 }) => {
   const { t, isRTL, language } = useLanguage();
 
-  // 2 Playing Modes: 'practice' (no timer, with explanation) | 'exam' (30 sec per question)
-  const [playMode, setPlayMode] = useState<'practice' | 'exam'>('practice');
+  // 2 Playing Modes: 'exam' (30 sec per question countdown) | 'practice' (no timer, with explanation)
+  const [playMode, setPlayMode] = useState<'practice' | 'exam'>('exam');
 
   // Config state
   const [settings, setSettings] = useState<QuizSettings>(() => {
@@ -88,12 +92,14 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
   const [lastStreakBroken, setLastStreakBroken] = useState<number>(0);
   const [questionResults, setQuestionResults] = useState<QuestionResult[]>([]);
 
-  // Timer per question state (used only in Exam Mode)
+  // Timer per question state (used only in Exam Mode: 30 to 0 countdown)
   const [timeRemaining, setTimeRemaining] = useState<number>(FIXED_TIMER_SECONDS);
   const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
   const quizStartTimeRef = useRef<number>(Date.now());
   const timerRef = useRef<number | null>(null);
   const advanceTimeoutRef = useRef<number | null>(null);
+  const hasTimedOutRef = useRef<boolean>(false);
+  const lastTickedSecondRef = useRef<number>(FIXED_TIMER_SECONDS);
 
   // CNS Test loading state
   const [isLoadingCns, setIsLoadingCns] = useState<boolean>(false);
@@ -123,8 +129,13 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
   }, []);
 
   // Launch quiz
-  const handleStartQuiz = () => {
+  const handleStartQuiz = (modeOverride?: 'practice' | 'exam') => {
     if (questions.length === 0) return;
+
+    const targetMode = modeOverride || playMode;
+    if (modeOverride) {
+      setPlayMode(modeOverride);
+    }
 
     const prepared = prepareRandomizedQuestions(questions);
     setQuizQuestions(prepared);
@@ -139,7 +150,13 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
     setBestStreak(0);
     setLastStreakBroken(0);
     setQuestionResults([]);
-    setTimeRemaining(playMode === 'exam' ? FIXED_TIMER_SECONDS : 0);
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    hasTimedOutRef.current = false;
+    lastTickedSecondRef.current = FIXED_TIMER_SECONDS;
+    setTimeRemaining(targetMode === 'exam' ? FIXED_TIMER_SECONDS : 0);
     setQuestionStartTime(Date.now());
     quizStartTimeRef.current = Date.now();
     setGameState('playing');
@@ -197,6 +214,12 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
   const advanceToNextQuestion = useCallback(
     (updatedResults: QuestionResult[]) => {
       if (currentIndex + 1 < quizQuestions.length) {
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+        hasTimedOutRef.current = false;
+        lastTickedSecondRef.current = FIXED_TIMER_SECONDS;
         setCurrentIndex((prev) => prev + 1);
         setSelectedOption(null);
         setIsAnswered(false);
@@ -340,33 +363,51 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
     }, settings.buzzDelayMs || 700);
   }, [isAnswered, gameState, playMode, quizQuestions, currentIndex, questionResults, currentStreak, settings.buzzDelayMs, advanceToNextQuestion]);
 
-  // Timer loop for Exam Mode
+  // Rock-solid 30-to-0 seconds countdown for Exam Mode based on wall-clock elapsed time
   useEffect(() => {
     if (gameState !== 'playing' || isAnswered || playMode !== 'exam') {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
       return;
     }
 
-    timerRef.current = window.setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          if (timerRef.current) clearInterval(timerRef.current);
-          handleTimeout();
-          return 0;
-        }
+    const intervalId = window.setInterval(() => {
+      const elapsedMs = Date.now() - questionStartTime;
+      const elapsedSec = Math.floor(elapsedMs / 1000);
+      const remaining = Math.max(0, FIXED_TIMER_SECONDS - elapsedSec);
 
-        if (prev <= 4 && prev > 1 && soundEnabled) {
+      setTimeRemaining(remaining);
+
+      // Play tick sound once per second when reaching 4, 3, 2, 1
+      if (remaining <= 4 && remaining >= 1 && lastTickedSecondRef.current !== remaining) {
+        lastTickedSecondRef.current = remaining;
+        if (soundEnabled) {
           sound.playTick();
         }
+      }
 
-        return prev - 1;
-      });
-    }, 1000);
+      // Trigger timeout exactly when reaching 0
+      if (remaining <= 0 && !hasTimedOutRef.current) {
+        hasTimedOutRef.current = true;
+        clearInterval(intervalId);
+        if (timerRef.current === intervalId) {
+          timerRef.current = null;
+        }
+        handleTimeout();
+      }
+    }, 100);
+
+    timerRef.current = intervalId;
 
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      clearInterval(intervalId);
+      if (timerRef.current === intervalId) {
+        timerRef.current = null;
+      }
     };
-  }, [gameState, isAnswered, currentIndex, soundEnabled, playMode, handleTimeout]);
+  }, [gameState, isAnswered, currentIndex, questionStartTime, playMode, soundEnabled, handleTimeout]);
 
   useEffect(() => {
     return () => {
@@ -426,545 +467,455 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
     }
   };
 
+  // Computer MCQ Loader handler (Fetches from Supabase storage)
+  const handleLoadComputerTest = async () => {
+    setIsLoadingCns(true);
+    setInlineUploadError(null);
+    setCnsSuccessMessage(null);
+    try {
+      const { questions: compQuestions, count } = await fetchComputerTestQuestions();
+      if (onQuestionsUploaded) {
+        onQuestionsUploaded(compQuestions);
+      }
+      setCnsSuccessMessage(
+        isRTL
+          ? `تم بنجاح تحميل اختبار الحاسوب (${count} سؤال)!`
+          : `Computer MCQs loaded successfully (${count} questions)!`
+      );
+    } catch (err: any) {
+      setInlineUploadError(err.message || 'Failed to download Computer MCQ file from Supabase.');
+    } finally {
+      setIsLoadingCns(false);
+    }
+  };
+
   const currentQ = quizQuestions[currentIndex];
 
-  const timerPercent = playMode === 'exam' ? (timeRemaining / FIXED_TIMER_SECONDS) * 100 : 100;
-  const isUrgentTime = playMode === 'exam' && timeRemaining <= 3;
-  const isWarningTime = playMode === 'exam' && timeRemaining <= 5 && !isUrgentTime;
+  const timerPercent = playMode === 'exam' ? Math.max(0, Math.min(100, (timeRemaining / FIXED_TIMER_SECONDS) * 100)) : 100;
+  const isUrgentTime = playMode === 'exam' && timeRemaining <= 5;
+  const isWarningTime = playMode === 'exam' && timeRemaining <= 10 && !isUrgentTime;
 
-  // LOBBY SCREEN
+  // LOBBY SCREEN (MATCHING SCREENSHOT 1)
   if (gameState === 'lobby') {
+    const recentAttempts = activeProfile.history || [];
+
     return (
-      <div className="mx-auto max-w-4xl px-4 py-6">
-        {/* Navigation back to Dental Faculty Subjects */}
+      <div className="mx-auto max-w-xl px-4 py-8 sm:px-6">
+        {/* TOP BAR: ROUND CIRCULAR BACK BUTTON */}
         {onNavigateToSubjects && (
-          <div className="mb-4 flex items-center justify-between flex-wrap gap-2">
+          <div className="mb-6">
             <button
               type="button"
               onClick={onNavigateToSubjects}
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 font-bold text-xs cursor-pointer transition-colors shadow-xs"
+              className="w-11 h-11 rounded-full border border-slate-200/90 bg-white shadow-xs flex items-center justify-center text-slate-800 hover:bg-slate-50 transition-colors cursor-pointer"
+              title={isRTL ? 'الرجوع إلى المواد' : 'Back to subjects'}
             >
-              {isRTL ? <ArrowRight className="w-3.5 h-3.5" /> : <ArrowLeft className="w-3.5 h-3.5" />}
-              <span>{isRTL ? 'الرجوع إلى مواد طب الأسنان (المرحلة الأولى)' : '← Dental faculty (first level)'}</span>
+              {isRTL ? <ArrowRight className="w-5 h-5 text-slate-800" /> : <ArrowLeft className="w-5 h-5 text-slate-800" />}
             </button>
-            {activeSubjectName && (
-              <span className="text-xs font-bold text-orange-700 bg-orange-50 px-3 py-1 rounded-xl border border-orange-200 flex items-center gap-1.5">
-                <Brain className="w-3.5 h-3.5 text-orange-500" />
-                <span>{activeSubjectName}</span>
-              </span>
-            )}
           </div>
         )}
 
-        {/* SECTION 1: ARENA BANNER */}
-        <div className="rounded-2xl border-2 border-slate-200 bg-white p-6 sm:p-7 shadow-xs">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-            <div>
-              <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-sky-600 mb-2">
-                <span>{t('arenaBadge')}</span>
-                <span>·</span>
-                <span>{t('randomizedBadge')}</span>
-                <span>·</span>
-                <span>{playMode === 'practice' ? t('modePracticeTitle') : t('modeExamTitle')}</span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-                {t('arenaTitle')}
-              </h1>
-              <p className="mt-1.5 text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
-                {t('arenaDescription')}
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3.5 bg-slate-50 p-4 rounded-2xl border border-slate-200 shadow-xs">
-              <div className="text-right rtl:text-left">
-                <div className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold">{t('highScore')}</div>
-                <div className="font-mono text-xl font-extrabold text-orange-500">
-                  {activeProfile.highScore.toLocaleString()}
-                </div>
-              </div>
-              <Zap className="h-7 w-7 text-orange-500 shrink-0" />
-            </div>
-          </div>
+        {/* SUBTITLE TRACKER (MATCHING "5 QUESTIONS" IN SCREENSHOT 1) */}
+        <div className="text-xs uppercase tracking-widest font-extrabold text-[#5B51D8] mb-2">
+          {questions.length || 100} {isRTL ? 'أسئلة' : 'QUESTIONS'}
         </div>
 
-        {/* LINE SEPARATING HEADER SECTION FROM MODE SELECTOR SECTION */}
-        <div className="w-full border-b-2 border-slate-200 my-6" />
+        {/* MAIN SUBJECT TITLE (MATCHING "tgxt" IN SCREENSHOT 1) */}
+        <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-8">
+          {activeSubjectName || (isRTL ? 'كلية طب الأسنان (المرحلة الأولى)' : 'Dental faculty (first level)')}
+        </h1>
 
-        {/* SECTION 2: MODE SELECTOR (PRACTICE VS EXAM) */}
-        <div>
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
-            <span>{t('modeSelectionTitle')}</span>
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* PRACTICE MODE CARD */}
-            <button
-              type="button"
-              onClick={() => setPlayMode('practice')}
-              className={`p-5 rounded-2xl border-2 text-left rtl:text-right transition-all flex flex-col justify-between cursor-pointer relative overflow-hidden bg-white ${
-                playMode === 'practice'
-                  ? 'border-orange-500 ring-2 ring-orange-500/20 shadow-md'
-                  : 'border-slate-200 hover:border-orange-300 text-slate-700'
-              }`}
-            >
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center font-bold border border-sky-200">
-                      <GraduationCap className="w-5 h-5" />
-                    </div>
-                    <span className="font-extrabold text-base text-slate-900">{t('modePracticeTitle')}</span>
-                  </div>
-                  {playMode === 'practice' && (
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 text-white text-xs">
-                      <Check className="h-3 w-3 stroke-[3]" />
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-slate-600 leading-relaxed mb-3">
-                  {t('modePracticeSubtitle')}
-                </p>
-              </div>
-
-              <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-sky-700">
-                <BookOpen className="w-3.5 h-3.5" />
-                <span>{t('modePracticeBadge')}</span>
-              </div>
-            </button>
-
-            {/* EXAM MODE CARD */}
-            <button
-              type="button"
-              onClick={() => setPlayMode('exam')}
-              className={`p-5 rounded-2xl border-2 text-left rtl:text-right transition-all flex flex-col justify-between cursor-pointer relative overflow-hidden bg-white ${
-                playMode === 'exam'
-                  ? 'border-orange-500 ring-2 ring-orange-500/20 shadow-md'
-                  : 'border-slate-200 hover:border-orange-300 text-slate-700'
-              }`}
-            >
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center font-bold border border-orange-200">
-                      <Timer className="w-5 h-5" />
-                    </div>
-                    <span className="font-extrabold text-base text-slate-900">{t('modeExamTitle')}</span>
-                  </div>
-                  {playMode === 'exam' && (
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 text-white text-xs">
-                      <Check className="h-3 w-3 stroke-[3]" />
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-slate-600 leading-relaxed mb-3">
-                  {t('modeExamSubtitle')}
-                </p>
-              </div>
-
-              <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-orange-700">
-                <Clock className="w-3.5 h-3.5" />
-                <span>{t('modeExamBadge')}</span>
-              </div>
-            </button>
-          </div>
-        </div>
-
-        {/* LINE SEPARATING MODE SELECTOR SECTION FROM START/ACTION SECTION */}
-        <div className="w-full border-b-2 border-slate-200 my-6" />
-
-        {/* SECTION 3: START ACTION & CNS TEST BUTTON */}
-        {questions.length === 0 ? (
-          <div className="rounded-2xl border-2 border-slate-200 p-8 sm:p-10 text-center bg-white shadow-xs">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl btn-glossy-orange text-white mb-4 shadow-md">
-              <Brain className="h-7 w-7" />
+        {/* TWO PRIMARY MODE CARDS: STUDY MODE & EXAM MODE */}
+        <div className="space-y-4">
+          {/* CARD 1: STUDY MODE (SOFT MINT GREEN CARD) */}
+          <button
+            type="button"
+            onClick={() => handleStartQuiz('practice')}
+            className="w-full text-left rtl:text-right p-6 sm:p-7 rounded-[28px] border border-[#B7F0D8] bg-[#EFFCF6] hover:bg-[#E6F9F0] transition-all cursor-pointer shadow-xs group block"
+          >
+            <div className="flex items-center gap-2.5 text-[#059669] mb-2.5">
+              <BookOpen className="w-5 h-5 stroke-[2.5]" />
+              <span className="font-black text-xl text-[#064E3B]">
+                {isRTL ? 'وضع التدريب' : 'Study mode'}
+              </span>
             </div>
-            <h3 className="text-xl font-black text-slate-900 mb-1.5">
-              CNS Test
-            </h3>
-            <p className="text-xs text-slate-500 max-w-md mx-auto mb-6 leading-relaxed">
+            <p className="text-sm sm:text-base text-[#065F46]/80 font-medium mb-6">
               {isRTL
-                ? 'اضغط على الزر أدناه لتحميل بنك أسئلة الـ CNS (105 أسئلة MCQ) من Supabase والبدء فوراً.'
-                : 'Click the button below to load the Central Nervous System MCQ questions (105 questions) from Supabase and start immediately.'}
+                ? 'بدون مؤقت زمني. شروحات وتغذية راجعة فورية بعد كل إجابة.'
+                : 'No timer. Instant feedback on every answer.'}
             </p>
+            <div className="inline-flex items-center gap-2 text-sm sm:text-base font-black text-[#059669] group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform">
+              <span>{isRTL ? 'ابدأ التدريب ←' : 'Start studying →'}</span>
+            </div>
+          </button>
 
+          {/* CARD 2: EXAM MODE (SOFT PASTEL LAVENDER CARD) */}
+          <button
+            type="button"
+            onClick={() => handleStartQuiz('exam')}
+            className="w-full text-left rtl:text-right p-6 sm:p-7 rounded-[28px] border border-[#DDD6FE] bg-[#F5F3FF] hover:bg-[#EDE9FE] transition-all cursor-pointer shadow-xs group block"
+          >
+            <div className="flex items-center gap-2.5 text-[#7C3AED] mb-2.5">
+              <Timer className="w-5 h-5 stroke-[2.5]" />
+              <span className="font-black text-xl text-[#2E1065]">
+                {isRTL ? 'وضع الامتحان' : 'Exam mode'}
+              </span>
+            </div>
+            <p className="text-sm sm:text-base text-[#5B21B6]/80 font-medium mb-6">
+              {isRTL
+                ? '30 ثانية لكل سؤال. حساب النتيجة في النهاية.'
+                : '30 seconds each. Score at the end.'}
+            </p>
+            <div className="inline-flex items-center gap-2 text-sm sm:text-base font-black text-[#7C3AED] group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform">
+              <span>{isRTL ? 'ابدأ الامتحان ←' : 'Start exam →'}</span>
+            </div>
+          </button>
+        </div>
+
+        {/* Quick test loaders (CNS & Computer) */}
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 font-semibold pt-4 px-1">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              disabled={isLoadingCns}
+              onClick={handleLoadComputerTest}
+              className="hover:text-slate-700 flex items-center gap-1.5 cursor-pointer transition-colors"
+            >
+              <Monitor className="w-3.5 h-3.5 text-slate-500" />
+              <span>{isLoadingCns ? '...' : isRTL ? 'تحميل الحاسوب (60)' : 'Load Computer (60)'}</span>
+            </button>
+            <span className="text-slate-300">·</span>
             <button
               type="button"
               disabled={isLoadingCns}
               onClick={handleLoadCnsTest}
-              className="px-8 py-3.5 rounded-2xl text-sm font-black btn-glossy-orange flex items-center justify-center gap-2.5 mx-auto cursor-pointer shadow-md disabled:opacity-50"
+              className="hover:text-slate-700 flex items-center gap-1.5 cursor-pointer transition-colors"
             >
-              {isLoadingCns ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <Brain className="h-4 w-4" />
-              )}
-              <span>{isLoadingCns ? (isRTL ? 'جاري التحميل...' : 'Loading...') : 'CNS Test'}</span>
+              <Brain className="w-3.5 h-3.5 text-slate-500" />
+              <span>{isLoadingCns ? '...' : isRTL ? 'تحميل CNS (105)' : 'Load CNS (105)'}</span>
             </button>
-
-            {inlineUploadError && (
-              <p className="mt-4 text-xs text-rose-600 font-bold bg-rose-50 border-2 border-rose-200 p-3 rounded-2xl max-w-md mx-auto">
-                {inlineUploadError}
-              </p>
-            )}
           </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="rounded-2xl border-2 border-slate-200 bg-white p-6 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-5">
-              <div className="flex items-center gap-4 text-center sm:text-left rtl:sm:text-right">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border-2 border-orange-200 bg-orange-50 text-orange-600 shrink-0">
-                  <Play className="h-6 w-6 fill-orange-500 text-orange-500" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 justify-center sm:justify-start rtl:sm:justify-start">
-                    <span className="text-xs uppercase tracking-wider font-extrabold text-sky-600">
-                      {t('bankReady')}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-lg text-[11px] font-black border border-slate-200 bg-slate-50">
-                      {playMode === 'practice' ? t('modePracticeTitle') : `30s · ${activeDifficulty.tier}`}
-                    </span>
-                  </div>
-                  <h2 className="text-lg font-extrabold text-slate-900 mt-0.5">
-                    {t('questionsCountLoaded', { count: questions.length })}
-                  </h2>
-                </div>
-              </div>
+          <span className="flex items-center gap-1">
+            <Shuffle className="w-3.5 h-3.5" />
+            <span>{isRTL ? 'ترتيب عشوائي' : 'Randomized'}</span>
+          </span>
+        </div>
 
-              {/* Action Buttons: CNS Test button + Start Quiz button */}
-              <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                <button
-                  type="button"
-                  disabled={isLoadingCns}
-                  onClick={handleLoadCnsTest}
-                  className="px-5 py-3.5 rounded-2xl text-xs font-black btn-glossy-orange-outline flex items-center justify-center gap-2 shrink-0 cursor-pointer"
-                  title="Load/Reload CNS Test from Supabase"
-                >
-                  {isLoadingCns ? (
-                    <div className="w-3.5 h-3.5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <Brain className="h-4 w-4 text-orange-500" />
-                  )}
-                  <span>CNS Test</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleStartQuiz}
-                  className="flex-1 sm:flex-initial px-8 py-3.5 rounded-2xl text-sm btn-glossy-orange flex items-center justify-center gap-2.5 shrink-0 cursor-pointer shadow-md"
-                >
-                  <Play className="h-4 w-4 fill-white" />
-                  <span>
-                    {playMode === 'practice'
-                      ? isRTL
-                        ? 'ابدأ التدريب والشروحات'
-                        : 'START PRACTICE'
-                      : t('startQuizSmashBtn')}
-                  </span>
-                  {isRTL ? <ArrowLeft className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            {cnsSuccessMessage && (
-              <p className="text-xs text-center text-emerald-800 font-bold bg-emerald-50 border-2 border-emerald-300 p-2.5 rounded-2xl">
-                {cnsSuccessMessage}
-              </p>
-            )}
-
-            <p className="text-xs text-center text-slate-400 flex items-center justify-center gap-1">
-              <Shuffle className="h-3.5 w-3.5" />
-              <span>{t('randomizationNotice')}</span>
-            </p>
-          </div>
+        {cnsSuccessMessage && (
+          <p className="mt-3 text-xs text-center text-emerald-800 font-bold bg-[#DCFCE7] border border-[#BBF7D0] p-3 rounded-2xl">
+            {cnsSuccessMessage}
+          </p>
         )}
+
+        {/* SECTION: RECENT RESULTS (MATCHING SCREENSHOT 1) */}
+        <div className="mt-10">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 mb-4">
+            {isRTL ? 'النتائج الأخيرة' : 'Recent results'}
+          </h2>
+
+          <div className="rounded-[24px] border border-slate-200/80 bg-white shadow-xs divide-y divide-slate-100 overflow-hidden">
+            {recentAttempts.length > 0 ? (
+              recentAttempts.slice(0, 5).map((att, idx) => {
+                const isExam = att.timerSettingSeconds > 0;
+                const timeDiffMs = Date.now() - att.timestamp;
+                let timeAgo = 'less than a minute ago';
+                if (timeDiffMs < 60000) timeAgo = 'less than a minute ago';
+                else if (timeDiffMs < 3600000) timeAgo = `${Math.floor(timeDiffMs / 60000)}m ago`;
+                else if (timeDiffMs < 86400000) timeAgo = `${Math.floor(timeDiffMs / 3600000)}h ago`;
+                else timeAgo = `${Math.floor(timeDiffMs / 86400000)} days ago`;
+
+                return (
+                  <div key={idx} className="p-4 sm:p-5 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5">
+                      <div
+                        className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
+                          isExam ? 'bg-[#F5F3FF] text-[#7C3AED]' : 'bg-[#EFFCF6] text-[#059669]'
+                        }`}
+                      >
+                        {isExam ? <Clock className="w-5 h-5" /> : <BookOpen className="w-5 h-5" />}
+                      </div>
+                      <div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-black text-slate-900 text-base">
+                            {att.correctCount}/{att.totalQuestions} correct
+                          </span>
+                          <span className="text-slate-400 font-bold text-sm">
+                            {att.accuracyPercent}%
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-400 font-medium mt-0.5">
+                          {isExam ? 'Exam' : 'Study'} · {timeAgo}
+                        </div>
+                      </div>
+                    </div>
+                    <Trophy className="w-5 h-5 text-amber-500 shrink-0" />
+                  </div>
+                );
+              })
+            ) : (
+              /* Reference screenshot samples if no history yet */
+              <>
+                <div className="p-4 sm:p-5 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-11 h-11 rounded-2xl bg-[#F5F3FF] text-[#7C3AED] flex items-center justify-center shrink-0">
+                      <Clock className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-black text-slate-900 text-base">4/5 correct</span>
+                        <span className="text-slate-400 font-bold text-sm">80%</span>
+                      </div>
+                      <div className="text-xs text-slate-400 font-medium mt-0.5">
+                        Exam · less than a minute ago
+                      </div>
+                    </div>
+                  </div>
+                  <Trophy className="w-5 h-5 text-amber-500 shrink-0" />
+                </div>
+
+                <div className="p-4 sm:p-5 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-11 h-11 rounded-2xl bg-[#F5F3FF] text-[#7C3AED] flex items-center justify-center shrink-0">
+                      <Clock className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-black text-slate-900 text-base">5/5 correct</span>
+                        <span className="text-slate-400 font-bold text-sm">100%</span>
+                      </div>
+                      <div className="text-xs text-slate-400 font-medium mt-0.5">
+                        Exam · 2 days ago
+                      </div>
+                    </div>
+                  </div>
+                  <Trophy className="w-5 h-5 text-amber-500 shrink-0" />
+                </div>
+
+                <div className="p-4 sm:p-5 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-11 h-11 rounded-2xl bg-[#EFFCF6] text-[#059669] flex items-center justify-center shrink-0">
+                      <BookOpen className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-black text-slate-900 text-base">4/5 correct</span>
+                        <span className="text-slate-400 font-bold text-sm">80%</span>
+                      </div>
+                      <div className="text-xs text-slate-400 font-medium mt-0.5">
+                        Study · 2 days ago
+                      </div>
+                    </div>
+                  </div>
+                  <Trophy className="w-5 h-5 text-amber-500 shrink-0" />
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       </div>
     );
   }
 
-  // GAMEPLAY SCREEN
+  // GAMEPLAY SCREEN (MATCHING SCREENSHOT 2)
   if (gameState === 'playing' && currentQ) {
     const potentialBonus =
       playMode === 'exam' ? Math.round(Math.max(0, timeRemaining) * activeDifficulty.speedFactor) : 0;
 
     return (
-      <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
-        {/* SECTION 1: CONTROL BUTTONS & STATUS BAR */}
-        <div className="rounded-2xl border-2 border-slate-200 bg-white p-5 shadow-xs">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            {/* Control buttons & question counter */}
-            <div className="flex items-center gap-2.5">
-              <button
-                type="button"
-                onClick={() => setGameState('lobby')}
-                className="px-3.5 py-1.5 rounded-2xl text-xs font-bold btn-glossy-orange-outline flex items-center gap-1.5 cursor-pointer"
-                title={t('backToLobbyBtn')}
-              >
-                {isRTL ? <ArrowRight className="h-3.5 w-3.5" /> : <ArrowLeft className="h-3.5 w-3.5" />}
-                <span>{isRTL ? 'خروج' : 'Exit'}</span>
-              </button>
+      <div className="mx-auto max-w-xl px-4 py-8 sm:px-6">
+        {/* TOP BAR: CIRCULAR BACK BUTTON, MODE PILL, QUESTION COUNTER */}
+        <div className="flex items-center justify-between gap-4 mb-3">
+          <button
+            type="button"
+            onClick={() => setGameState('lobby')}
+            className="w-11 h-11 rounded-full border border-slate-200/90 bg-white shadow-xs flex items-center justify-center text-slate-800 hover:bg-slate-50 transition-colors cursor-pointer shrink-0"
+            title={isRTL ? 'الرجوع إلى الساحة' : 'Back to lobby'}
+          >
+            {isRTL ? <ArrowRight className="w-5 h-5 text-slate-800" /> : <ArrowLeft className="w-5 h-5 text-slate-800" />}
+          </button>
 
-              <button
-                type="button"
-                onClick={() => setIsSoundOn(!isSoundOn)}
-                className="p-1.5 rounded-2xl text-xs font-bold btn-glossy-orange-outline flex items-center justify-center cursor-pointer"
-                title={isSoundOn ? 'Mute' : 'Unmute'}
-              >
-                {isSoundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-              </button>
-
-              <span className="text-xs font-extrabold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
-                {t('questionNumberLabel', { current: currentIndex + 1, total: quizQuestions.length })}
-              </span>
-
-              <span className={`text-[11px] font-extrabold px-2.5 py-1 rounded-xl border ${activeDifficulty.borderColor} ${activeDifficulty.badgeBg}`}>
-                {playMode === 'practice' ? '🎓 Practice' : '⏱️ 30s Exam'}
-              </span>
+          {/* Mode Pill Badge (Matching "STUDY" in Screenshot 2) */}
+          {playMode === 'practice' ? (
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#E6F9F0] text-[#059669] border border-[#B7F0D8]">
+              <BookOpen className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>{isRTL ? 'تدريب' : 'STUDY'}</span>
             </div>
-
-            {/* Streak & Score controls */}
-            <div className="flex items-center gap-3">
-              {/* Live Streak Pill */}
-              <div
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-2xl text-xs font-bold border transition-all ${
-                  currentStreak >= 1
-                    ? 'border-amber-300 bg-amber-50 text-amber-700'
-                    : 'border-slate-200 bg-slate-50 text-slate-500'
-                }`}
-              >
-                <Flame
-                  className={`h-4 w-4 transition-transform duration-300 ${
-                    currentStreak >= 3
-                      ? 'fill-amber-500 text-amber-500 scale-125 animate-bounce'
-                      : currentStreak >= 1
-                      ? 'fill-amber-500 text-amber-500 scale-110'
-                      : 'text-slate-400'
-                  }`}
-                />
-                <span className="font-mono">{t('liveStreakLabel', { streak: currentStreak })}</span>
-
-                {currentStreak > 1 && (
-                  <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500 text-white font-extrabold shadow-xs">
-                    {t('liveStreakBonus', { pct: (currentStreak - 1) * 15 })}
-                  </span>
-                )}
-              </div>
-
-              {/* Score Display */}
-              <div className="bg-slate-50 px-3 py-1 rounded-2xl border border-slate-200 text-right rtl:text-left">
-                <div className="font-mono text-base font-extrabold text-orange-500">
-                  {currentScore.toLocaleString()}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* TIMER BAR: Shown in Exam Mode */}
-          {playMode === 'exam' && (
-            <div className="mt-4 pt-4 border-t border-slate-200">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Clock
-                    className={`h-4 w-4 ${
-                      isUrgentTime
-                        ? 'text-rose-500 animate-ping'
-                        : isWarningTime
-                        ? 'text-amber-500'
-                        : 'text-sky-600'
-                    }`}
-                  />
-                  <span className="text-xs font-medium text-slate-600">{t('timeLabel')}</span>
-                  <span
-                    className={`font-mono text-base font-extrabold ${
-                      isUrgentTime ? 'text-rose-500 scale-110' : isWarningTime ? 'text-amber-500' : 'text-slate-900'
-                    } transition-all`}
-                  >
-                    {timeRemaining}s
-                  </span>
-                </div>
-
-                <div className="text-xs font-mono text-slate-500 flex items-center gap-2">
-                  <span>
-                    {t('baseScoreLabel')} <strong className="text-slate-900">{activeDifficulty.basePoints}</strong>
-                  </span>
-                  <span>·</span>
-                  <span>
-                    {t('speedBonusLabel')} <strong className="text-emerald-600">+{potentialBonus} pts</strong>
-                  </span>
-                </div>
-              </div>
-
-              <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
-                <div
-                  className={`h-full transition-all duration-300 rounded-full ${
-                    isUrgentTime
-                      ? 'bg-rose-500'
-                      : isWarningTime
-                      ? 'bg-amber-500'
-                      : 'bg-orange-500'
-                  }`}
-                  style={{ width: `${Math.max(0, timerPercent)}%` }}
-                />
-              </div>
+          ) : (
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#F3E8FF] text-[#7C3AED] border border-[#DDD6FE]">
+              <Timer className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>{isRTL ? 'امتحان 30ث' : 'EXAM 30s'}</span>
             </div>
           )}
 
-          {/* Practice Mode Untimed Notice */}
-          {playMode === 'practice' && (
-            <div className="mt-3.5 flex items-center justify-between text-xs text-emerald-800 bg-emerald-50 px-3.5 py-2 rounded-2xl border border-emerald-200 font-semibold">
-              <div className="flex items-center gap-2">
-                <GraduationCap className="h-4 w-4 text-emerald-600" />
-                <span>{isRTL ? 'وضع التدريب: خذ وقتك الكامل للتفكير. سيظهر الشرح بعد الإجابة.' : 'Practice Mode: Take your time. Explanations will appear after answering.'}</span>
-              </div>
-              <span className="text-[11px] opacity-80 font-bold">Untimed</span>
-            </div>
-          )}
+          {/* Question counter (Matching "1/5" in Screenshot 2) */}
+          <span className="text-sm font-bold text-slate-400">
+            {currentIndex + 1}/{quizQuestions.length}
+          </span>
         </div>
 
-        {/* LINE 1: SEPARATING CONTROL BUTTONS FROM THE QUESTION SECTION */}
-        <div className="w-full border-b-2 border-slate-200 my-6" />
+        {/* THIN PROGRESS BAR DIRECTLY BELOW HEADER */}
+        <div className="h-1 w-full bg-slate-200/80 rounded-full overflow-hidden my-4">
+          <div
+            className={`h-full rounded-full transition-all duration-300 ${
+              playMode === 'exam' ? 'bg-[#7C3AED]' : 'bg-slate-400'
+            }`}
+            style={{
+              width: `${
+                playMode === 'exam'
+                  ? Math.max(0, timerPercent)
+                  : ((currentIndex + 1) / quizQuestions.length) * 100
+              }%`,
+            }}
+          />
+        </div>
 
-        {/* SECTION 2: QUESTION SECTION */}
-        <div
-          className={`rounded-2xl border-2 bg-white p-6 sm:p-8 shadow-xs transition-all ${
-            shakeCard ? 'border-rose-500 animate-buzz-shake shadow-rose-500/20' : 'border-slate-200'
-          }`}
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs uppercase tracking-wider font-extrabold text-orange-500">
-              {isRTL ? 'نص السؤال' : 'Question Prompt'}
-            </span>
+        {/* EXAM MODE 30 TO 0 SECONDS COUNTDOWN HERO */}
+        {playMode === 'exam' && (
+          <div
+            className={`flex items-center justify-between px-4 py-2.5 rounded-2xl mb-5 transition-all duration-300 ${
+              isUrgentTime
+                ? 'bg-rose-50 border-2 border-rose-300 shadow-sm text-rose-700'
+                : isWarningTime
+                ? 'bg-amber-50 border-2 border-amber-200 text-amber-700'
+                : 'bg-[#F5F3FF] border border-[#DDD6FE] text-[#7C3AED]'
+            }`}
+          >
+            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider">
+              <Clock
+                className={`w-4 h-4 ${
+                  isUrgentTime ? 'text-rose-600 animate-pulse' : ''
+                }`}
+              />
+              <span>
+                {isUrgentTime
+                  ? (isRTL ? 'الوقت ينفد بسرعة!' : 'Final Seconds!')
+                  : (isRTL ? 'مؤقت الامتحان: 30 إلى 0 ثانية' : 'Exam Timer: 30 to 0s')}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-mono font-bold opacity-80">
+                +{potentialBonus} pts
+              </span>
+              <span
+                className={`font-mono text-xl font-black ${
+                  isUrgentTime ? 'text-rose-600 animate-bounce' : ''
+                }`}
+              >
+                {timeRemaining}s
+              </span>
+            </div>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-relaxed">
+        )}
+
+        {/* QUESTION PROMPT (MATCHING SCREENSHOT 2) */}
+        <div className="mb-8">
+          <div className="text-xs font-extrabold uppercase tracking-widest text-slate-400 mb-2">
+            {isRTL ? `السؤال ${currentIndex + 1}` : `QUESTION ${currentIndex + 1}`}
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 leading-snug tracking-tight">
             {currentQ.questionText}
           </h2>
         </div>
 
-        {/* LINE 2: SEPARATING QUESTION SECTION FROM THE ANSWERS SECTION */}
-        <div className="w-full border-b-2 border-slate-200 my-6" />
+        {/* OPTIONS VERTICAL STACK (MATCHING SCREENSHOT 2) */}
+        <div className="space-y-3.5">
+          {currentQ.options.map((option, idx) => {
+            const letter = String.fromCharCode(65 + idx);
+            const isSelected = selectedOption === idx;
+            const isCorrect = idx === currentQ.correctOptionIndex;
 
-        {/* SECTION 3: ANSWERS SECTION */}
-        <div>
-          <div className="text-xs uppercase tracking-wider font-extrabold text-slate-500 mb-3 flex items-center gap-2">
-            <span>{isRTL ? 'اختر الإجابة الصحيحة:' : 'Select the correct answer:'}</span>
-          </div>
+            let cardStyle =
+              'border-slate-200/90 bg-white text-slate-600 hover:border-slate-300';
+            let badgeStyle = 'bg-slate-100 text-slate-400';
+            let icon: React.ReactNode = letter;
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            {currentQ.options.map((option, idx) => {
-              const letter = isRTL
-                ? ['أ', 'ب', 'ج', 'د', 'هـ', 'و'][idx] || String.fromCharCode(65 + idx)
-                : String.fromCharCode(65 + idx);
-              const isSelected = selectedOption === idx;
-              const isCorrect = idx === currentQ.correctOptionIndex;
-
-              let cardStyle =
-                'border-slate-200 bg-white text-slate-800 hover:border-orange-500 hover:shadow-orange-500/20 active:scale-[0.99]';
-              let badgeStyle = 'btn-glossy-orange';
-
-              if (isAnswered) {
-                if (isSelected && isCorrect) {
-                  cardStyle =
-                    'border-emerald-500 bg-emerald-50 text-emerald-950 font-bold ring-2 ring-emerald-500/30';
-                  badgeStyle = 'bg-emerald-600 text-white border-emerald-700';
-                } else if (isSelected && !isCorrect) {
-                  cardStyle =
-                    'border-rose-500 bg-rose-50 text-rose-950 font-bold ring-2 ring-rose-500/30';
-                  badgeStyle = 'bg-rose-600 text-white border-rose-700';
-                } else if (!isSelected && isCorrect) {
-                  cardStyle =
-                    'border-emerald-500/80 bg-emerald-50/60 text-emerald-900 font-semibold';
-                  badgeStyle = 'bg-emerald-600 text-white border-emerald-700';
-                } else {
-                  cardStyle =
-                    'border-slate-200 bg-slate-50/60 text-slate-400 opacity-60';
-                  badgeStyle = 'bg-slate-200 text-slate-500 border-slate-300';
-                }
+            if (isAnswered) {
+              if (isCorrect) {
+                cardStyle = 'border-[#059669] border-2 bg-[#F0FDF4] text-slate-900 font-bold';
+                badgeStyle = 'bg-[#059669] text-white';
+                icon = <Check className="w-5 h-5 stroke-[3]" />;
+              } else if (isSelected && !isCorrect) {
+                cardStyle = 'border-[#EF4444] border-2 bg-[#FEF2F2] text-slate-900 font-bold';
+                badgeStyle = 'bg-[#EF4444] text-white';
+                icon = <X className="w-5 h-5 stroke-[3]" />;
+              } else {
+                cardStyle = 'border-slate-200/50 bg-white/50 text-slate-300 opacity-60';
+                badgeStyle = 'bg-slate-100 text-slate-300';
               }
+            }
 
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  disabled={isAnswered}
-                  onClick={() => handleSelectOption(idx)}
-                  className={`group relative flex items-center gap-3.5 rounded-2xl border-2 p-4 text-left rtl:text-right transition-all select-none cursor-pointer shadow-xs ${cardStyle}`}
+            return (
+              <button
+                key={idx}
+                type="button"
+                disabled={isAnswered}
+                onClick={() => handleSelectOption(idx)}
+                className={`w-full rounded-2xl border-2 p-4 sm:p-5 flex items-center gap-4 transition-all text-left rtl:text-right cursor-pointer select-none ${cardStyle}`}
+              >
+                <div
+                  className={`w-10 h-10 rounded-xl font-bold flex items-center justify-center shrink-0 transition-colors ${badgeStyle}`}
                 >
-                  <div
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-mono text-xs font-bold transition-transform group-hover:scale-105 ${badgeStyle}`}
-                  >
-                    {isAnswered && isCorrect ? (
-                      <CheckCircle2 className="h-5 w-5" />
-                    ) : isAnswered && isSelected && !isCorrect ? (
-                      <XCircle className="h-5 w-5" />
-                    ) : (
-                      letter
-                    )}
-                  </div>
-                  <span className="flex-1 text-sm font-bold leading-snug">{option}</span>
-                </button>
-              );
-            })}
-          </div>
+                  {icon}
+                </div>
+                <span className="flex-1 text-base sm:text-lg font-semibold leading-snug">
+                  {option}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* LINE 3: SEPARATING ANSWERS SECTION FROM ACTION / EXPLANATION SECTION */}
+        {/* FEEDBACK BOX (MATCHING "Not quite" IN SCREENSHOT 2) */}
         {isAnswered && (
-          <>
-            <div className="w-full border-b-2 border-slate-200 my-6" />
-
-            {/* SECTION 4: EXPLANATION / ADVANCE ACTION SECTION */}
-            {playMode === 'practice' && (
-              <div className="rounded-2xl border-2 border-slate-200 bg-white p-6 shadow-xs">
-                <div className="flex items-center gap-2 mb-2 font-extrabold text-sm text-sky-800">
-                  <BookOpen className="h-4 w-4 text-sky-600" />
-                  <span>{t('explanationTitle')}</span>
+          <div>
+            {lastAnswerCorrect ? (
+              <div className="rounded-2xl bg-[#DCFCE7]/70 border border-[#BBF7D0] p-4 sm:p-5 mt-6 flex items-start gap-3.5">
+                <div className="w-7 h-7 rounded-full bg-[#059669] text-white flex items-center justify-center shrink-0 mt-0.5">
+                  <Check className="w-4 h-4 stroke-[3]" />
                 </div>
-
-                <p className="text-sm text-slate-700 leading-relaxed mb-5">
-                  {currentQ.explanation ? (
-                    currentQ.explanation
-                  ) : (
-                    <span>
-                      {t('noExplanationGiven')}{' '}
-                      <strong className="text-orange-600 font-bold">
-                        ({currentQ.options[currentQ.correctOptionIndex]})
-                      </strong>
-                    </span>
-                  )}
-                </p>
-
-                {/* Orange Glossy Rounded Button for Next Question */}
-                <button
-                  type="button"
-                  onClick={() => advanceToNextQuestion(questionResults)}
-                  className="w-full sm:w-auto px-8 py-3.5 rounded-2xl btn-glossy-orange text-sm flex items-center justify-center gap-2.5 cursor-pointer"
-                >
-                  <span>{t('nextQuestionBtn')}</span>
-                  {isRTL ? <ArrowLeft className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
-                </button>
+                <div className="flex-1">
+                  <h3 className="font-black text-[#14532D] text-base">
+                    {isRTL ? 'إجابة صحيحة!' : 'Correct!'}
+                  </h3>
+                  <p className="text-slate-700 text-sm mt-0.5 leading-relaxed">
+                    {currentQ.explanation
+                      ? currentQ.explanation
+                      : isRTL
+                      ? `الإجابة هي ${currentQ.options[currentQ.correctOptionIndex]}.`
+                      : `The answer is ${currentQ.options[currentQ.correctOptionIndex]}.`}
+                  </p>
+                </div>
               </div>
-            )}
-
-            {/* Feedback banner in Exam Mode */}
-            {playMode === 'exam' && (
-              <div
-                className={`rounded-2xl border-2 p-4 text-xs font-bold flex items-center justify-between transition-all ${
-                  lastAnswerCorrect
-                    ? 'border-emerald-500/50 bg-emerald-50 text-emerald-800'
-                    : 'border-rose-500/50 bg-rose-50 text-rose-800'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  {lastAnswerCorrect ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-                  <span>
-                    {lastAnswerCorrect
-                      ? t('feedbackCorrect', { pts: pointsGainedThisQuestion, mult: activeDifficulty.multiplier })
-                      : selectedOption === -1
-                      ? t('feedbackTimeout')
-                      : t('feedbackWrong')}
-                  </span>
+            ) : (
+              <div className="rounded-2xl bg-[#FEE2E2]/70 border border-[#FECACA] p-4 sm:p-5 mt-6 flex items-start gap-3.5">
+                <div className="w-7 h-7 rounded-full bg-[#EF4444] text-white flex items-center justify-center shrink-0 mt-0.5">
+                  <X className="w-4 h-4 stroke-[3]" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-black text-[#991B1B] text-base">
+                    {isRTL ? 'إجابة غير صحيحة' : 'Not quite'}
+                  </h3>
+                  <p className="text-slate-700 text-sm mt-0.5 leading-relaxed">
+                    {isRTL ? 'الإجابة هي ' : 'The answer is '}
+                    <strong className="font-bold text-slate-900">
+                      {currentQ.options[currentQ.correctOptionIndex]}
+                    </strong>
+                    .{currentQ.explanation ? ` ${currentQ.explanation}` : ''}
+                  </p>
                 </div>
               </div>
             )}
-          </>
+
+            {/* BOTTOM NEXT QUESTION BUTTON (MATCHING SCREENSHOT 2) */}
+            <button
+              type="button"
+              onClick={() => advanceToNextQuestion(questionResults)}
+              className="w-full py-4 px-6 rounded-2xl bg-[#4F46E5] hover:bg-[#4338CA] text-white font-black text-base shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.99] mt-6"
+            >
+              <span>{isRTL ? 'السؤال التالي ←' : 'Next question →'}</span>
+            </button>
+          </div>
         )}
       </div>
     );
@@ -1042,12 +993,12 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
       {/* LINE SEPARATING STATS GRID FROM ACTION BUTTONS */}
       <div className="w-full border-b-2 border-slate-200 my-6" />
 
-      {/* SECTION 3: ORANGE GLOSSY ROUNDED ACTION BUTTONS */}
-      <div className="rounded-2xl border-2 border-slate-200 bg-white p-6 shadow-xs flex flex-wrap items-center justify-center gap-3">
+      {/* SECTION 3: ACTION BUTTONS */}
+      <div className="rounded-[24px] border border-slate-200/80 bg-white p-6 shadow-xs flex flex-wrap items-center justify-center gap-3">
         <button
           type="button"
-          onClick={handleStartQuiz}
-          className="px-6 py-3.5 rounded-2xl text-xs sm:text-sm btn-glossy-orange flex items-center justify-center gap-2 cursor-pointer"
+          onClick={() => handleStartQuiz()}
+          className="px-6 py-3.5 rounded-2xl text-xs sm:text-sm bg-[#4F46E5] hover:bg-[#4338CA] text-white font-black flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-indigo-500/20 transition-all"
         >
           <RotateCcw className="h-4 w-4" />
           <span>{t('playAgainBtn')}</span>
@@ -1056,7 +1007,7 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
         <button
           type="button"
           onClick={() => setGameState('lobby')}
-          className="px-6 py-3.5 rounded-2xl text-xs sm:text-sm btn-glossy-orange-outline flex items-center justify-center gap-2 cursor-pointer"
+          className="px-6 py-3.5 rounded-2xl text-xs sm:text-sm border-2 border-slate-200 hover:border-slate-300 text-slate-700 font-bold bg-white flex items-center justify-center gap-2 cursor-pointer transition-all"
         >
           <span>{t('backToLobbyBtn')}</span>
         </button>
@@ -1065,9 +1016,9 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
           <button
             type="button"
             onClick={onNavigateToSubjects}
-            className="px-6 py-3.5 rounded-2xl text-xs sm:text-sm border-2 border-orange-300 bg-orange-50 text-orange-700 hover:bg-orange-100 font-black flex items-center justify-center gap-2 cursor-pointer transition-colors"
+            className="px-6 py-3.5 rounded-2xl text-xs sm:text-sm border border-[#DDD6FE] bg-[#F5F3FF] text-[#7C3AED] hover:bg-[#EDE9FE] font-black flex items-center justify-center gap-2 cursor-pointer transition-colors"
           >
-            <GraduationCap className="h-4 w-4 text-orange-500" />
+            <GraduationCap className="h-4 w-4 text-[#7C3AED]" />
             <span>{isRTL ? 'مواد طب الأسنان' : 'Dental faculty (first level)'}</span>
           </button>
         )}

@@ -15,8 +15,14 @@ import {
 import { supabase } from '../supabaseClient.js';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import { CourseStage } from './CourseSelectionView';
 
-export const AuthScreen: React.FC = () => {
+interface AuthScreenProps {
+  onBackToCourses?: () => void;
+  selectedCourse?: CourseStage | null;
+}
+
+export const AuthScreen: React.FC<AuthScreenProps> = ({ onBackToCourses, selectedCourse }) => {
   const { isRTL } = useLanguage();
   const { dailyLoginExpiredNotice, dismissDailyNotice } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
@@ -155,14 +161,18 @@ export const AuthScreen: React.FC = () => {
             }
           }
 
-          // Switch to Sign In mode and pre-fill the email
+          // Switch to Sign In mode and keep/pre-fill the email used during signup
+          const signedUpEmail = email.trim();
           setMode('signin');
+          setEmail(signedUpEmail);
           setPassword('');
           setConfirmPassword('');
+          setFirstName('');
+          setLastName('');
           setSuccessMessage(
             isRTL
-              ? `تم إنشاء حسابك بنجاح (${formattedFullName}). يرجى التحقق من بريدك الإلكتروني وتأكيد عنوانك قبل تسجيل الدخول.`
-              : `Your account has been created successfully (${formattedFullName}). Please check your email and verify your address before logging in.`
+              ? 'تم إنشاء حسابك بنجاح. يرجى التحقق من بريدك الإلكتروني وتأكيد عنوانك قبل تسجيل الدخول.'
+              : 'Your account has been created. Please check your email and verify your address before logging in.'
           );
         }
       }
@@ -190,10 +200,34 @@ export const AuthScreen: React.FC = () => {
           </div>
         )}
 
-        {/* SECTION 1: BRAND HEADER */}
+        {/* Selected Course Indicator & Back Button */}
+        {onBackToCourses && (
+          <div className="mb-4 flex items-center justify-between pb-3 border-b border-slate-100">
+            <button
+              type="button"
+              onClick={onBackToCourses}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 hover:text-orange-700 cursor-pointer transition-colors"
+            >
+              {isRTL ? <ArrowRight className="w-3.5 h-3.5" /> : <ArrowLeft className="w-3.5 h-3.5" />}
+              <span>{isRTL ? 'تغيير المرحلة الدراسية' : 'Change Course'}</span>
+            </button>
+
+            {selectedCourse && (
+              <span className="text-[11px] font-black text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
+                {isRTL ? selectedCourse.nameAr : selectedCourse.nameEn}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* SECTION 1: BRAND HEADER WITH ATTACHED APP LOGO */}
         <div className="text-center">
-          <div className="mx-auto w-16 h-16 rounded-2xl btn-glossy-orange flex items-center justify-center shadow-md mb-3 text-white">
-            <Zap className="w-8 h-8 fill-white" />
+          <div className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center shadow-md mb-3 bg-white border border-slate-200 overflow-hidden">
+            <img
+              src="/assets/aistudio/icon_9d2c6e5c.png"
+              alt="Quiz Smash Logo"
+              className="w-16 h-16 object-contain"
+            />
           </div>
 
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-2xl bg-orange-50 border border-orange-200 text-orange-600 text-xs font-black mb-2">
@@ -225,7 +259,6 @@ export const AuthScreen: React.FC = () => {
             onClick={() => {
               setMode('signin');
               setErrorMessage('');
-              setSuccessMessage('');
             }}
             className={`py-2.5 text-xs font-black rounded-xl transition-all cursor-pointer ${
               mode === 'signin'
@@ -256,11 +289,13 @@ export const AuthScreen: React.FC = () => {
         {/* LINE SEPARATING MODE SWITCHER FROM FORM */}
         <div className="w-full border-b-2 border-slate-200 my-5" />
 
-        {/* Success Message above the form */}
+        {/* Clear Success Message above the form (e.g. after signup) */}
         {successMessage && (
-          <div className="mb-4 p-3.5 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-emerald-800 text-xs font-bold text-center leading-relaxed flex items-center justify-center gap-2">
-            <Check className="w-4 h-4 shrink-0 text-emerald-600" />
-            <span>{successMessage}</span>
+          <div className="mb-5 p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-400 text-emerald-900 text-xs sm:text-sm font-bold leading-relaxed flex items-center gap-3 shadow-xs">
+            <div className="w-7 h-7 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0">
+              <Check className="w-4 h-4 stroke-[3]" />
+            </div>
+            <p className="flex-1 text-left rtl:text-right">{successMessage}</p>
           </div>
         )}
 

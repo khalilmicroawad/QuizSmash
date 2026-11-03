@@ -85,11 +85,11 @@ export function parseQuestionBank(rawText: string): ParseResult {
       continue;
     }
 
-    // New question header indicator (e.g. "Question 1: ...", "Q2. ...") when previous question already collected options
+    // New question header indicator (e.g. "Question 1: ...", "Question 1", "Q2. ...") when previous question already collected options
     if (
       currentQuestionText &&
       currentOptions.length >= 2 &&
-      trimmed.match(/^(?:question\s*\d+|سؤال\s*\d+|q\d+)[:.]/i)
+      trimmed.match(/^(?:question\s*\d+|سؤال\s*\d+|q\d+)(?:[:.]|\s|$)/i)
     ) {
       finalizeCurrentQuestion(lineNum);
       currentQuestionText = trimmed;
@@ -105,10 +105,23 @@ export function parseQuestionBank(rawText: string): ParseResult {
       continue;
     }
 
-    // If we don't have a question text yet, this line is the question text!
+    // If we don't have a question text yet, this line is the initial question text or header
     if (!currentQuestionText) {
       currentQuestionText = trimmed;
       questionStartLine = lineNum;
+      continue;
+    }
+
+    // If currentQuestionText is solely a header (e.g. "Question 1") and we haven't gathered options yet:
+    // the next line is the actual question prompt!
+    if (
+      currentOptions.length === 0 &&
+      /^(?:question\s*\d+|سؤال\s*\d+|q\d+)[:.]?$/i.test(currentQuestionText.trim()) &&
+      !trimmed.startsWith('+') &&
+      !trimmed.match(/^[a-eA-Eأ-د][\)\.]\s*/) &&
+      !trimmed.match(/^(?:answer|ans|correct(?: answer)?|الإجابة|الجواب)/i)
+    ) {
+      currentQuestionText = trimmed;
       continue;
     }
 

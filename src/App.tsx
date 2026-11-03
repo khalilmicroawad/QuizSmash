@@ -16,16 +16,26 @@ import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { InstallModal } from './components/InstallModal';
 import { fetchCnsTestQuestions } from './services/cnsTestService';
+import { CourseSelectionView, CourseStage, DENTAL_COURSES } from './components/CourseSelectionView';
+import { Lock } from 'lucide-react';
 
 function QuizSmashApp() {
   const [currentTab, setCurrentTab] = useState<'subjects' | 'play' | 'bank' | 'profile'>('subjects');
   const [currentSubject, setCurrentSubject] = useState<DentalSubject>(DENTAL_FACULTY_SUBJECTS[1]); // General Human Anatomy
+  const [selectedCourse, setSelectedCourse] = useState<CourseStage | null>(() => {
+    try {
+      const saved = localStorage.getItem('quiz_smash_selected_course');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
   const [questions, setQuestions] = useState<Question[]>(() => StorageService.getQuestions());
   const [activeProfile, setActiveProfile] = useState<UserProfile>(() => StorageService.getActiveProfile());
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => sound.isEnabled());
   const [isInstallModalOpen, setIsInstallModalOpen] = useState<boolean>(false);
-  const { t } = useLanguage();
-  const { user, isUnlocked, trialExpiresAt, isLoading } = useAuth();
+  const { t, isRTL } = useLanguage();
+  const { user, isUnlocked, allowedCourse, trialExpiresAt, isLoading } = useAuth();
 
   // Auto-fetch CNS Test from Supabase if questions are empty
   React.useEffect(() => {
@@ -99,7 +109,7 @@ function QuizSmashApp() {
   }, [user, isLoading]);
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 flex flex-col font-sans selection:bg-orange-500 selection:text-white transition-colors duration-200">
+    <div className="min-h-screen bg-[#FAF9F6] text-slate-900 flex flex-col font-sans selection:bg-indigo-600 selection:text-white transition-colors duration-200">
       {/* Universal Top Bar with Quiz Smash & Theme & Language Switcher */}
       <Header
         currentTab={currentTab}
@@ -112,12 +122,71 @@ function QuizSmashApp() {
           <div className="min-h-[50vh] flex items-center justify-center">
             <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
           </div>
+        ) : !selectedCourse ? (
+          /* Step 0: User must select course first (Course 1 is functional, 2-5 appear not functioning) */
+          <CourseSelectionView
+            onSelectCourse={(course) => {
+              setSelectedCourse(course);
+              try {
+                localStorage.setItem('quiz_smash_selected_course', JSON.stringify(course));
+              } catch {
+                // ignore
+              }
+            }}
+          />
         ) : !user ? (
-          /* Step 1: First page is Sign Up and Sign In with Gmail account */
-          <AuthScreen />
+          /* Step 1: Sign Up and Sign In */
+          <AuthScreen
+            selectedCourse={selectedCourse}
+            onBackToCourses={() => setSelectedCourse(null)}
+          />
         ) : !isUnlocked ? (
           /* Step 2: Only after registration & sign in, page about 24-hour trial or payment of 20000 IQD */
-          hasTrialExpired ? <PaywallView /> : <AccessCodeGate />
+          hasTrialExpired ? (
+            <PaywallView
+              selectedCourse={selectedCourse}
+              onBackToCourses={() => setSelectedCourse(null)}
+            />
+          ) : (
+            <AccessCodeGate
+              selectedCourse={selectedCourse}
+              onBackToCourses={() => setSelectedCourse(null)}
+            />
+          )
+        ) : allowedCourse && selectedCourse && selectedCourse.id !== allowedCourse ? (
+          /* Enforce requirement: codes can ONLY login in first course not other courses */
+          <div className="min-h-[60vh] flex items-center justify-center p-4">
+            <div className="max-w-md w-full bg-white border-2 border-amber-300 rounded-3xl p-6 shadow-xl text-center">
+              <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto mb-3 shadow-xs">
+                <Lock className="w-7 h-7" />
+              </div>
+              <h3 className="text-lg font-black text-slate-900 mb-2">
+                {isRTL ? 'الكود مخصص للمرحلة الأولى فقط' : 'Code Restricted to Course 1 Only'}
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed mb-4">
+                {isRTL
+                  ? 'كود الـ 13 رقماً المفعل في حسابك مخصص حصرياً للمرحلة الأولى (First Course). لا يمكن استخدامه لدخول المواد والمراحل الأخرى.'
+                  : 'Your activated 13-figure code is strictly restricted to Course 1 (First Level) and cannot unlock other courses.'}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  const course1 = DENTAL_COURSES.find((c) => c.id === 'stage-1');
+                  if (course1) {
+                    setSelectedCourse(course1);
+                    try {
+                      localStorage.setItem('quiz_smash_selected_course', JSON.stringify(course1));
+                    } catch {
+                      // ignore
+                    }
+                  }
+                }}
+                className="btn-glossy-orange text-xs font-bold py-2.5 px-5 rounded-xl cursor-pointer shadow-sm hover:scale-102 transition-transform"
+              >
+                {isRTL ? 'العودة إلى المرحلة الأولى المتاحة' : 'Return to Course 1'}
+              </button>
+            </div>
+          </div>
         ) : (
           /* Step 3: Unlocked quiz arena (within 24h trial OR permanently activated via 20,000 IQD code) */
           <>
