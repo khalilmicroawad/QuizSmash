@@ -202,68 +202,63 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onBackToCourses, selecte
 
         {/* Selected Course Indicator & Back Button */}
         {onBackToCourses && (
-          <div className="mb-4 flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="mb-4 flex items-center justify-between pb-3 border-b border-[#D9E2CE]">
             <button
               type="button"
               onClick={onBackToCourses}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 hover:text-orange-700 cursor-pointer transition-colors"
+              title={isRTL ? 'تغيير المرحلة الدراسية' : 'Change Course'}
+              aria-label={isRTL ? 'تغيير المرحلة الدراسية' : 'Change Course'}
+              className="w-8 h-8 rounded-lg bg-[#F2F5ED] text-[#4D5D28] hover:bg-[#E6ECDC] flex items-center justify-center cursor-pointer transition-colors"
             >
-              {isRTL ? <ArrowRight className="w-3.5 h-3.5" /> : <ArrowLeft className="w-3.5 h-3.5" />}
-              <span>{isRTL ? 'تغيير المرحلة الدراسية' : 'Change Course'}</span>
+              {isRTL ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
             </button>
 
             {selectedCourse && (
-              <span className="text-[11px] font-black text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
+              <span className="text-[11px] font-bold text-[#4D5D28] bg-[#F2F5ED] px-2.5 py-0.5 rounded-full border border-[#D9E2CE]">
                 {isRTL ? selectedCourse.nameAr : selectedCourse.nameEn}
               </span>
             )}
           </div>
         )}
 
-        {/* SECTION 1: BRAND HEADER WITH ATTACHED APP LOGO */}
+        {/* BRAND HEADER */}
         <div className="text-center">
-          <div className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center shadow-md mb-3 bg-white border border-slate-200 overflow-hidden">
+          <div className="mx-auto w-14 h-14 rounded-2xl flex items-center justify-center shadow-xs mb-3 bg-white border border-[#D9E2CE] overflow-hidden">
             <img
               src="/assets/aistudio/icon_9d2c6e5c.png"
               alt="Quiz Smash Logo"
-              className="w-16 h-16 object-contain"
+              className="w-14 h-14 object-contain"
             />
           </div>
 
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-2xl bg-orange-50 border border-orange-200 text-orange-600 text-xs font-black mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-orange-500" />
-            <span>{isRTL ? 'الخطوة 1: تسجيل الدخول أو حساب جديد' : 'Step 1: Sign In or Register Account'}</span>
-          </div>
-
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
             {isRTL ? (
-              <>كويز <span className="text-orange-500">سماش</span></>
+              <>كويز <span className="text-emerald-600">سماش</span></>
             ) : (
-              <>Quiz <span className="text-orange-500">Smash</span></>
+              <>Quiz <span className="text-emerald-600">Smash</span></>
             )}
           </h1>
-          <p className="mt-1 text-xs text-slate-600 max-w-xs mx-auto">
+          <p className="mt-1 text-xs text-[#556B2F] max-w-xs mx-auto">
             {isRTL
-              ? 'سجّل الدخول بحسابك للوصول إلى التجربة المجانية لمدة يومين (48 ساعة) أو تفعيل اشتراك 100 تسجيل دخول.'
-              : 'Sign in with your email to access the 2-day free trial or activate your 100-login subscription.'}
+              ? 'سجّل الدخول للمتابعة إلى بنك أسئلة المرحلة الأولى'
+              : 'Sign in to access your dental course questions'}
           </p>
         </div>
 
-        {/* LINE SEPARATING HEADER FROM MODE SELECTOR */}
-        <div className="w-full border-b-2 border-slate-200 my-5" />
-
-        {/* SECTION 2: MODE SWITCHER TABS */}
-        <div className="grid grid-cols-2 p-1.5 rounded-2xl bg-slate-100 border border-slate-200 gap-1.5">
+        {/* MODE SWITCHER TABS */}
+        <div className="grid grid-cols-2 p-1 rounded-2xl bg-[#F2F5ED] border border-[#D9E2CE] gap-1 my-5">
           <button
             type="button"
             onClick={() => {
               setMode('signin');
               setErrorMessage('');
             }}
-            className={`py-2.5 text-xs font-black rounded-xl transition-all cursor-pointer ${
+            title={isRTL ? 'تسجيل الدخول' : 'Sign In'}
+            aria-label={isRTL ? 'تسجيل الدخول' : 'Sign In'}
+            className={`py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
               mode === 'signin'
-                ? 'btn-glossy-orange'
-                : 'text-slate-600 hover:text-slate-900 bg-transparent'
+                ? 'btn-glossy-emerald text-white shadow-xs'
+                : 'text-[#4D5D28] hover:text-[#283215] bg-transparent'
             }`}
           >
             {isRTL ? 'تسجيل الدخول' : 'Sign In'}
@@ -276,10 +271,12 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onBackToCourses, selecte
               setErrorMessage('');
               setSuccessMessage('');
             }}
-            className={`py-2.5 text-xs font-black rounded-xl transition-all cursor-pointer ${
+            title={isRTL ? 'إنشاء حساب جديد' : 'Sign Up'}
+            aria-label={isRTL ? 'إنشاء حساب جديد' : 'Sign Up'}
+            className={`py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
               mode === 'signup'
-                ? 'btn-glossy-orange'
-                : 'text-slate-600 hover:text-slate-900 bg-transparent'
+                ? 'btn-glossy-emerald text-white shadow-xs'
+                : 'text-[#4D5D28] hover:text-[#283215] bg-transparent'
             }`}
           >
             {isRTL ? 'إنشاء حساب جديد' : 'Sign Up'}
@@ -339,14 +336,14 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onBackToCourses, selecte
                   </span>
                 </div>
                 <div className="relative">
-                  <User className="w-4 h-4 text-slate-400 absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2" />
+                  <User className="w-4 h-4 text-sky-500 absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     required
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value.replace(/[^a-zA-Z\s'-]/g, ''))}
                     placeholder="e.g. Ali"
-                    className="w-full pl-9 pr-3 rtl:pl-3 rtl:pr-9 py-2.5 text-sm rounded-2xl border-2 border-slate-200 bg-white text-slate-900 focus:outline-none focus:border-orange-500 font-sans"
+                    className="w-full pl-9 pr-3 rtl:pl-3 rtl:pr-9 py-2.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-900 focus:outline-none focus:border-emerald-500 font-sans"
                   />
                 </div>
                 <p className="mt-1 text-[10px] text-slate-400 text-left rtl:text-right font-medium">
@@ -357,100 +354,82 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onBackToCourses, selecte
           )}
 
           <div>
-            <label className="block text-xs font-extrabold text-slate-700 mb-1.5 text-left rtl:text-right">
+            <label className="block text-xs font-bold text-slate-700 mb-1 text-left rtl:text-right">
               {isRTL ? 'البريد الإلكتروني:' : 'Email Address:'}
             </label>
             <div className="relative">
-              <Mail className="w-4 h-4 text-slate-400 absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2" />
+              <Mail className="w-4 h-4 text-emerald-500 absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2" />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
-                className="w-full pl-9 pr-3 rtl:pl-3 rtl:pr-9 py-2.5 text-sm rounded-2xl border-2 border-slate-200 bg-white text-slate-900 focus:outline-none focus:border-orange-500 font-mono"
+                className="w-full pl-9 pr-3 rtl:pl-3 rtl:pr-9 py-2.5 text-xs rounded-xl border border-[#D9E2CE] bg-white text-slate-900 focus:outline-none focus:border-emerald-500 font-mono"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-extrabold text-slate-700 mb-1.5 text-left rtl:text-right">
+            <label className="block text-xs font-bold text-slate-700 mb-1 text-left rtl:text-right">
               {isRTL ? 'كلمة المرور:' : 'Password:'}
             </label>
             <div className="relative">
-              <Lock className="w-4 h-4 text-slate-400 absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2" />
+              <Lock className="w-4 h-4 text-indigo-500 absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2" />
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-9 pr-3 rtl:pl-3 rtl:pr-9 py-2.5 text-sm rounded-2xl border-2 border-slate-200 bg-white text-slate-900 focus:outline-none focus:border-orange-500 font-mono"
+                className="w-full pl-9 pr-3 rtl:pl-3 rtl:pr-9 py-2.5 text-xs rounded-xl border border-[#D9E2CE] bg-white text-slate-900 focus:outline-none focus:border-emerald-500 font-mono"
               />
             </div>
           </div>
 
           {mode === 'signup' && (
             <div>
-              <label className="block text-xs font-extrabold text-slate-700 mb-1.5 text-left rtl:text-right">
+              <label className="block text-xs font-bold text-slate-700 mb-1 text-left rtl:text-right">
                 {isRTL ? 'تأكيد كلمة المرور:' : 'Confirm Password:'}
               </label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2" />
+                <Lock className="w-4 h-4 text-purple-500 absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="password"
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-9 pr-3 rtl:pl-3 rtl:pr-9 py-2.5 text-sm rounded-2xl border-2 border-slate-200 bg-white text-slate-900 focus:outline-none focus:border-orange-500 font-mono"
+                  className="w-full pl-9 pr-3 rtl:pl-3 rtl:pr-9 py-2.5 text-xs rounded-xl border border-[#D9E2CE] bg-white text-slate-900 focus:outline-none focus:border-emerald-500 font-mono"
                 />
               </div>
             </div>
           )}
 
-          {/* ORANGE GLOSSY ROUNDED SUBMIT BUTTON */}
+          {/* GLOSSY EMERALD SUBMIT BUTTON - ICON ONLY */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 px-4 rounded-2xl btn-glossy-orange text-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            title={mode === 'signin' ? (isRTL ? 'تسجيل الدخول' : 'Sign In') : (isRTL ? 'إنشاء الحساب' : 'Sign Up')}
+            aria-label={mode === 'signin' ? (isRTL ? 'تسجيل الدخول' : 'Sign In') : (isRTL ? 'إنشاء الحساب' : 'Sign Up')}
+            className="w-full py-3.5 px-4 rounded-xl btn-glossy-emerald text-white font-bold flex items-center justify-center cursor-pointer shadow-md disabled:opacity-50 transition-transform active:scale-[0.99]"
           >
-            <span>
-              {loading
-                ? isRTL
-                  ? 'جاري التحقق...'
-                  : 'Processing...'
-                : mode === 'signin'
-                ? isRTL
-                  ? 'دخول والمتابعة إلى التطبيق'
-                  : 'Sign In & Continue'
-                : isRTL
-                ? 'إنشاء الحساب والمتابعة'
-                : 'Create Account & Continue'}
-            </span>
-            {isRTL ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
+            {loading ? (
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : isRTL ? (
+              <ArrowLeft className="w-6 h-6 stroke-[3]" />
+            ) : (
+              <ArrowRight className="w-6 h-6 stroke-[3]" />
+            )}
           </button>
 
           {/* Error Message */}
           {errorMessage && (
-            <div className="p-3.5 rounded-2xl bg-rose-50 border-2 border-rose-300 text-rose-700 text-xs font-bold text-center">
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium text-center">
               {errorMessage}
             </div>
           )}
         </form>
-
-        {/* LINE SEPARATING FORM FROM NEXT STEP NOTICE */}
-        <div className="w-full border-b-2 border-slate-200 my-5" />
-
-        {/* Notice of next step */}
-        <div className="text-center text-[11px] text-slate-500">
-          <ShieldCheck className="w-3.5 h-3.5 inline mr-1 text-sky-600" />
-          <span>
-            {isRTL
-              ? 'بعد الدخول ستظهر لك شاشة تفعيل التجربة المجانية لمدة يومين (48 ساعة) أو كود اشتراك 100 تسجيل دخول.'
-              : 'After signing in, you will be directed to the 2-day free trial and 100-login subscription page.'}
-          </span>
-        </div>
       </div>
     </div>
   );

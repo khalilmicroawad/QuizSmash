@@ -525,78 +525,88 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
           {activeSubjectName || (isRTL ? 'كلية طب الأسنان (المرحلة الأولى)' : 'Dental faculty (first level)')}
         </h1>
 
-        {/* TWO PRIMARY MODE CARDS: STUDY MODE & EXAM MODE */}
+        {/* TWO PRIMARY MODE CARDS: STUDY MODE (EMERALD) & EXAM MODE (OLIVE) */}
         <div className="space-y-4">
-          {/* CARD 1: STUDY MODE (SOFT MINT GREEN CARD) */}
+          {/* CARD 1: STUDY MODE (EMERALD GREEN CARD) */}
           <button
             type="button"
             onClick={() => handleStartQuiz('practice')}
-            className="w-full text-left rtl:text-right p-6 sm:p-7 rounded-[28px] border border-[#B7F0D8] bg-[#EFFCF6] hover:bg-[#E6F9F0] transition-all cursor-pointer shadow-xs group block"
+            className="w-full text-left rtl:text-right p-6 sm:p-7 rounded-[28px] border border-emerald-300 bg-emerald-50/70 hover:bg-emerald-50 transition-all cursor-pointer shadow-xs group block"
           >
-            <div className="flex items-center gap-2.5 text-[#059669] mb-2.5">
-              <BookOpen className="w-5 h-5 stroke-[2.5]" />
-              <span className="font-black text-xl text-[#064E3B]">
-                {isRTL ? 'وضع التدريب' : 'Study mode'}
-              </span>
+            <div className="flex items-center justify-between mb-2.5">
+              <div className="flex items-center gap-2.5 text-emerald-700">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 text-white flex items-center justify-center shadow-sm shadow-emerald-500/25 shrink-0">
+                  <BookOpen className="w-4 h-4 stroke-[2.5]" />
+                </div>
+                <span className="font-black text-xl text-emerald-950">
+                  {isRTL ? 'وضع التدريب' : 'Study mode'}
+                </span>
+              </div>
+              <div className="w-10 h-10 rounded-xl btn-glossy-emerald flex items-center justify-center text-white shrink-0 group-hover:scale-105 transition-transform">
+                {isRTL ? <ArrowLeft className="w-5 h-5" /> : <ArrowRight className="w-5 h-5" />}
+              </div>
             </div>
-            <p className="text-sm sm:text-base text-[#065F46]/80 font-medium mb-6">
+            <p className="text-sm sm:text-base text-emerald-800 font-medium">
               {isRTL
                 ? 'بدون مؤقت زمني. شروحات وتغذية راجعة فورية بعد كل إجابة.'
                 : 'No timer. Instant feedback on every answer.'}
             </p>
-            <div className="inline-flex items-center gap-2 text-sm sm:text-base font-black text-[#059669] group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform">
-              <span>{isRTL ? 'ابدأ التدريب ←' : 'Start studying →'}</span>
-            </div>
           </button>
 
-          {/* CARD 2: EXAM MODE (SOFT PASTEL LAVENDER CARD) */}
+          {/* CARD 2: EXAM MODE (OLIVE GREEN CARD) */}
           <button
             type="button"
             onClick={() => handleStartQuiz('exam')}
-            className="w-full text-left rtl:text-right p-6 sm:p-7 rounded-[28px] border border-[#DDD6FE] bg-[#F5F3FF] hover:bg-[#EDE9FE] transition-all cursor-pointer shadow-xs group block"
+            className="w-full text-left rtl:text-right p-6 sm:p-7 rounded-[28px] border border-[#D9E2CE] bg-[#F2F5ED] hover:bg-[#EAEFE3] transition-all cursor-pointer shadow-xs group block"
           >
-            <div className="flex items-center gap-2.5 text-[#7C3AED] mb-2.5">
-              <Timer className="w-5 h-5 stroke-[2.5]" />
-              <span className="font-black text-xl text-[#2E1065]">
-                {isRTL ? 'وضع الامتحان' : 'Exam mode'}
-              </span>
+            <div className="flex items-center justify-between mb-2.5">
+              <div className="flex items-center gap-2.5 text-[#556B2F]">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 text-white flex items-center justify-center shadow-sm shadow-purple-500/25 shrink-0">
+                  <Timer className="w-4 h-4 stroke-[2.5]" />
+                </div>
+                <span className="font-black text-xl text-[#2B3814]">
+                  {isRTL ? 'وضع الامتحان' : 'Exam mode'}
+                </span>
+              </div>
+              <div className="w-10 h-10 rounded-xl btn-glossy-olive flex items-center justify-center text-white shrink-0 group-hover:scale-105 transition-transform">
+                {isRTL ? <ArrowLeft className="w-5 h-5" /> : <ArrowRight className="w-5 h-5" />}
+              </div>
             </div>
-            <p className="text-sm sm:text-base text-[#5B21B6]/80 font-medium mb-6">
+            <p className="text-sm sm:text-base text-[#4D5D28] font-medium">
               {isRTL
                 ? '30 ثانية لكل سؤال. حساب النتيجة في النهاية.'
                 : '30 seconds each. Score at the end.'}
             </p>
-            <div className="inline-flex items-center gap-2 text-sm sm:text-base font-black text-[#7C3AED] group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform">
-              <span>{isRTL ? 'ابدأ الامتحان ←' : 'Start exam →'}</span>
-            </div>
           </button>
         </div>
 
-        {/* Quick test loaders (CNS & Computer) */}
+        {/* Quick test loaders (CNS & Computer) - Icon Only */}
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 font-semibold pt-4 px-1">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               disabled={isLoadingCns}
               onClick={handleLoadComputerTest}
-              className="hover:text-slate-700 flex items-center gap-1.5 cursor-pointer transition-colors"
+              title={isRTL ? 'تحميل الحاسوب' : 'Load Computer'}
+              aria-label={isRTL ? 'تحميل الحاسوب' : 'Load Computer'}
+              className="w-8 h-8 rounded-lg btn-glossy-emerald text-white flex items-center justify-center cursor-pointer shadow-xs disabled:opacity-50"
             >
-              <Monitor className="w-3.5 h-3.5 text-slate-500" />
-              <span>{isLoadingCns ? '...' : isRTL ? 'تحميل الحاسوب (60)' : 'Load Computer (60)'}</span>
+              <Monitor className="w-4 h-4 text-sky-200" />
             </button>
-            <span className="text-slate-300">·</span>
+
             <button
               type="button"
               disabled={isLoadingCns}
               onClick={handleLoadCnsTest}
-              className="hover:text-slate-700 flex items-center gap-1.5 cursor-pointer transition-colors"
+              title={isRTL ? 'تحميل CNS' : 'Load CNS'}
+              aria-label={isRTL ? 'تحميل CNS' : 'Load CNS'}
+              className="w-8 h-8 rounded-lg btn-glossy-olive text-white flex items-center justify-center cursor-pointer shadow-xs disabled:opacity-50"
             >
-              <Brain className="w-3.5 h-3.5 text-slate-500" />
-              <span>{isLoadingCns ? '...' : isRTL ? 'تحميل CNS (105)' : 'Load CNS (105)'}</span>
+              <Brain className="w-4 h-4 text-purple-200" />
             </button>
           </div>
-          <span className="flex items-center gap-1">
-            <Shuffle className="w-3.5 h-3.5" />
+          <span className="flex items-center gap-1 text-[#556B2F]">
+            <Shuffle className="w-3.5 h-3.5 text-amber-500" />
             <span>{isRTL ? 'ترتيب عشوائي' : 'Randomized'}</span>
           </span>
         </div>
@@ -907,13 +917,15 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
               </div>
             )}
 
-            {/* BOTTOM NEXT QUESTION BUTTON (MATCHING SCREENSHOT 2) */}
+            {/* BOTTOM NEXT QUESTION BUTTON - GLOSSY EMERALD - ICON ONLY */}
             <button
               type="button"
               onClick={() => advanceToNextQuestion(questionResults)}
-              className="w-full py-4 px-6 rounded-2xl bg-[#4F46E5] hover:bg-[#4338CA] text-white font-black text-base shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.99] mt-6"
+              title={isRTL ? 'السؤال التالي' : 'Next question'}
+              aria-label={isRTL ? 'السؤال التالي' : 'Next question'}
+              className="w-full py-4 px-6 rounded-2xl btn-glossy-emerald text-white flex items-center justify-center cursor-pointer transition-all active:scale-[0.99] mt-6 shadow-md"
             >
-              <span>{isRTL ? 'السؤال التالي ←' : 'Next question →'}</span>
+              {isRTL ? <ArrowLeft className="w-6 h-6 stroke-[3]" /> : <ArrowRight className="w-6 h-6 stroke-[3]" />}
             </button>
           </div>
         )}
@@ -928,13 +940,13 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-      {/* SECTION 1: RESULT BANNER */}
-      <div className="rounded-2xl border-2 border-slate-200 bg-white p-6 sm:p-8 text-center shadow-xs">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-50 border-2 border-orange-200 text-orange-500 shadow-sm mb-4 text-3xl">
+      {/* RESULT BANNER (EMERALD / OLIVE) */}
+      <div className="rounded-2xl border border-[#D9E2CE] bg-white p-6 sm:p-8 text-center shadow-xs">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 shadow-xs mb-3 text-2xl">
           {accuracyPercent >= 80 ? '🏆' : accuracyPercent >= 50 ? '⭐' : '🎯'}
         </div>
 
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-2xl text-xs font-bold border-2 mb-3 bg-sky-50 border-sky-200 text-sky-700">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mb-2 bg-[#F2F5ED] border border-[#D9E2CE] text-[#4D5D28]">
           <span>{playMode === 'practice' ? '🎓 Practice Complete' : '⏱️ 30s Exam Complete'}</span>
         </div>
 
@@ -942,48 +954,48 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
           {t('completedTitle')}
         </h1>
 
-        <div className="my-6 max-w-xs mx-auto rounded-2xl border-2 border-slate-200 bg-slate-50 p-5">
-          <div className="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">
+        <div className="my-5 max-w-xs mx-auto rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4">
+          <div className="text-xs uppercase tracking-wider text-[#556B2F] font-semibold mb-1">
             {t('finalScoreLabel')}
           </div>
-          <div className="font-mono text-3xl font-black text-orange-500">
+          <div className="font-mono text-3xl font-black text-emerald-700">
             {currentScore.toLocaleString()}
           </div>
         </div>
       </div>
 
       {/* LINE SEPARATING RESULT BANNER FROM STATS GRID */}
-      <div className="w-full border-b-2 border-slate-200 my-6" />
+      <div className="w-full border-b border-[#D9E2CE] my-6" />
 
       {/* SECTION 2: STATS GRID */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="rounded-2xl border-2 border-slate-200 bg-white p-3.5 text-center">
-          <div className="text-[11px] text-slate-500 font-semibold">{t('accuracyLabel')}</div>
+        <div className="rounded-2xl border border-[#D9E2CE] bg-white p-3.5 text-center">
+          <div className="text-[11px] text-[#556B2F] font-semibold">{t('accuracyLabel')}</div>
           <div className="font-mono text-xl font-black text-slate-900 mt-1">{accuracyPercent}%</div>
           <div className="text-[10px] text-slate-500">
             {t('accuracyCount', { correct: correctCount, total: questionResults.length })}
           </div>
         </div>
 
-        <div className="rounded-2xl border-2 border-slate-200 bg-white p-3.5 text-center">
-          <div className="text-[11px] text-slate-500 font-semibold">{t('bestStreakLabel')}</div>
+        <div className="rounded-2xl border border-[#D9E2CE] bg-white p-3.5 text-center">
+          <div className="text-[11px] text-[#556B2F] font-semibold">{t('bestStreakLabel')}</div>
           <div className="font-mono text-xl font-black text-amber-500 mt-1">
             {bestStreak} 🔥
           </div>
           <div className="text-[10px] text-slate-500">{t('inARowLabel')}</div>
         </div>
 
-        <div className="rounded-2xl border-2 border-slate-200 bg-white p-3.5 text-center">
-          <div className="text-[11px] text-slate-500 font-semibold">Mode</div>
+        <div className="rounded-2xl border border-[#D9E2CE] bg-white p-3.5 text-center">
+          <div className="text-[11px] text-[#556B2F] font-semibold">Mode</div>
           <div className="font-mono text-sm font-black text-slate-900 mt-1">
             {playMode === 'practice' ? 'Practice' : 'Exam 30s'}
           </div>
           <div className="text-[10px] text-slate-500">{playMode === 'practice' ? 'Untimed' : 'Speed test'}</div>
         </div>
 
-        <div className="rounded-2xl border-2 border-slate-200 bg-white p-3.5 text-center">
-          <div className="text-[11px] text-slate-500 font-semibold">Total Questions</div>
-          <div className="font-mono text-xl font-black text-sky-600 mt-1">
+        <div className="rounded-2xl border border-[#D9E2CE] bg-white p-3.5 text-center">
+          <div className="text-[11px] text-[#556B2F] font-semibold">Total Questions</div>
+          <div className="font-mono text-xl font-black text-emerald-700 mt-1">
             {questionResults.length}
           </div>
           <div className="text-[10px] text-slate-500">Reviewed</div>
@@ -991,35 +1003,39 @@ export const QuizPlayView: React.FC<QuizPlayViewProps> = ({
       </div>
 
       {/* LINE SEPARATING STATS GRID FROM ACTION BUTTONS */}
-      <div className="w-full border-b-2 border-slate-200 my-6" />
+      <div className="w-full border-b border-[#D9E2CE] my-6" />
 
-      {/* SECTION 3: ACTION BUTTONS */}
-      <div className="rounded-[24px] border border-slate-200/80 bg-white p-6 shadow-xs flex flex-wrap items-center justify-center gap-3">
+      {/* SECTION 3: ACTION BUTTONS - GLOSSY ICON-ONLY */}
+      <div className="rounded-[24px] border border-[#D9E2CE] bg-white p-6 shadow-xs flex items-center justify-center gap-4">
         <button
           type="button"
           onClick={() => handleStartQuiz()}
-          className="px-6 py-3.5 rounded-2xl text-xs sm:text-sm bg-[#4F46E5] hover:bg-[#4338CA] text-white font-black flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-indigo-500/20 transition-all"
+          title={t('playAgainBtn')}
+          aria-label={t('playAgainBtn')}
+          className="w-12 h-12 rounded-2xl btn-glossy-emerald text-white flex items-center justify-center cursor-pointer shadow-md transition-transform active:scale-95"
         >
-          <RotateCcw className="h-4 w-4" />
-          <span>{t('playAgainBtn')}</span>
+          <RotateCcw className="h-5 w-5" />
         </button>
 
         <button
           type="button"
           onClick={() => setGameState('lobby')}
-          className="px-6 py-3.5 rounded-2xl text-xs sm:text-sm border-2 border-slate-200 hover:border-slate-300 text-slate-700 font-bold bg-white flex items-center justify-center gap-2 cursor-pointer transition-all"
+          title={t('backToLobbyBtn')}
+          aria-label={t('backToLobbyBtn')}
+          className="w-12 h-12 rounded-2xl btn-glossy-olive text-white flex items-center justify-center cursor-pointer shadow-md transition-transform active:scale-95"
         >
-          <span>{t('backToLobbyBtn')}</span>
+          <ArrowLeft className="h-5 w-5" />
         </button>
 
         {onNavigateToSubjects && (
           <button
             type="button"
             onClick={onNavigateToSubjects}
-            className="px-6 py-3.5 rounded-2xl text-xs sm:text-sm border border-[#DDD6FE] bg-[#F5F3FF] text-[#7C3AED] hover:bg-[#EDE9FE] font-black flex items-center justify-center gap-2 cursor-pointer transition-colors"
+            title={isRTL ? 'مواد طب الأسنان' : 'Dental faculty'}
+            aria-label={isRTL ? 'مواد طب الأسنان' : 'Dental faculty'}
+            className="w-12 h-12 rounded-2xl border border-[#D9E2CE] bg-[#F2F5ED] text-[#4D5D28] hover:bg-[#EAEFE3] flex items-center justify-center cursor-pointer transition-colors shadow-xs"
           >
-            <GraduationCap className="h-4 w-4 text-[#7C3AED]" />
-            <span>{isRTL ? 'مواد طب الأسنان' : 'Dental faculty (first level)'}</span>
+            <GraduationCap className="h-5 w-5" />
           </button>
         )}
       </div>

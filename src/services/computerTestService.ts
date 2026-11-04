@@ -42,12 +42,16 @@ export async function fetchComputerSectionQuestions(
     }
   }
 
+  // Requirement: in each section load all questions bank not only 25
+  const allResult = await fetchAllComputerSectionsQuestions();
+  const allQuestions = allResult.questions;
+
   // Persist to storage
-  StorageService.saveQuestions(finalQuestions);
+  StorageService.saveQuestions(allQuestions);
 
   return {
-    questions: finalQuestions,
-    count: finalQuestions.length,
+    questions: allQuestions,
+    count: allQuestions.length,
     section,
   };
 }

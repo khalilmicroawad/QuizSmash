@@ -1,5 +1,24 @@
 @import "tailwindcss";
 
+/* Azer / 29LT Azer Arabic Typeface */
+@font-face {
+  font-family: 'Azer';
+  src: url('/fonts/azer.woff2') format('woff2'),
+       url('/fonts/azer.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: '29LT Azer';
+  src: url('/fonts/azer.woff2') format('woff2'),
+       url('/fonts/azer.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   html,
   body {
@@ -21,8 +40,15 @@
   }
 
   [dir="rtl"],
-  [dir="rtl"] body {
-    font-family: 'Cairo', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  [dir="rtl"] body,
+  [dir="rtl"] button,
+  [dir="rtl"] input,
+  [dir="rtl"] textarea,
+  [dir="rtl"] select,
+  html[lang="ar"],
+  html[lang="ar"] body,
+  .font-arabic {
+    font-family: 'Azer', '29LT Azer', 'Cairo', system-ui, -apple-system, sans-serif !important;
   }
 }
 
@@ -36,51 +62,68 @@
   animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
-/* Orange Glossy Rounded Button Utility */
-.btn-glossy-orange {
-  background: linear-gradient(180deg, #fb923c 0%, #f97316 48%, #ea580c 100%);
-  border: 1px solid #ea580c;
-  border-top-color: #fed7aa;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -2px 0 rgba(0, 0, 0, 0.18), 0 3px 10px rgba(249, 115, 22, 0.35);
+/* Glossy Emerald Green Button */
+.btn-glossy-emerald,
+.btn-primary {
+  background: linear-gradient(180deg, #10b981 0%, #059669 52%, #047857 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -2px 0 rgba(0, 0, 0, 0.22), 0 4px 12px rgba(5, 150, 105, 0.35);
+  border: 1px solid #047857;
   color: #ffffff;
-  border-radius: 1rem;
-  font-weight: 800;
   transition: all 0.15s ease-in-out;
 }
 
-.btn-glossy-orange:hover {
-  background: linear-gradient(180deg, #fdba74 0%, #fb923c 48%, #ea580c 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), inset 0 -2px 0 rgba(0, 0, 0, 0.18), 0 5px 14px rgba(249, 115, 22, 0.45);
+.btn-glossy-emerald:hover,
+.btn-primary:hover {
+  background: linear-gradient(180deg, #34d399 0%, #10b981 52%, #059669 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -2px 0 rgba(0, 0, 0, 0.25), 0 6px 16px rgba(5, 150, 105, 0.45);
   transform: translateY(-1px);
 }
 
-.btn-glossy-orange:active {
-  background: linear-gradient(180deg, #ea580c 0%, #f97316 100%);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25);
+.btn-glossy-emerald:active,
+.btn-primary:active {
+  background: linear-gradient(180deg, #047857 0%, #059669 100%);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
   transform: translateY(1px);
 }
 
-/* Secondary Glossy Orange Rounded Button */
-.btn-glossy-orange-outline {
-  background: #ffffff;
-  border: 2px solid #f97316;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 2px 6px rgba(249, 115, 22, 0.15);
-  color: #ea580c;
-  border-radius: 1rem;
-  font-weight: 800;
+/* Glossy Olive Green Button */
+.btn-glossy-olive,
+.btn-olive {
+  background: linear-gradient(180deg, #708A28 0%, #556B2F 52%, #3E5022 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 -2px 0 rgba(0, 0, 0, 0.25), 0 4px 12px rgba(85, 107, 47, 0.35);
+  border: 1px solid #3E5022;
+  color: #ffffff;
   transition: all 0.15s ease-in-out;
 }
 
-.btn-glossy-orange-outline:hover {
-  background: #fff7ed;
-  border-color: #ea580c;
-  box-shadow: 0 4px 10px rgba(249, 115, 22, 0.25);
+.btn-glossy-olive:hover,
+.btn-olive:hover {
+  background: linear-gradient(180deg, #85A630 0%, #708A28 52%, #4E632B 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -2px 0 rgba(0, 0, 0, 0.28), 0 6px 16px rgba(85, 107, 47, 0.45);
   transform: translateY(-1px);
 }
 
-.btn-glossy-orange-outline:active {
-  background: #ffedd5;
+.btn-glossy-olive:active,
+.btn-olive:active {
+  background: linear-gradient(180deg, #3E5022 0%, #556B2F 100%);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
   transform: translateY(1px);
+}
+
+/* Secondary Outline Button */
+.btn-outline {
+  background-color: #ffffff;
+  border: 1.5px solid #d1fae5;
+  color: #065f46;
+  border-radius: 1rem;
+  font-weight: 700;
+  transition: all 0.15s ease-in-out;
+}
+
+.btn-outline:hover {
+  border-color: #059669;
+  color: #047857;
+  background-color: #ecfdf5;
 }
 
 /* Clear Section Divider */

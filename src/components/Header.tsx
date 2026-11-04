@@ -30,13 +30,16 @@ export const Header: React.FC<HeaderProps> = ({
     timeLeftFormatted,
     usedLogins,
     maxLogins,
+    remainingAttempts,
+    accessedCount,
+    maxAttempts,
     signOutUser,
   } = useAuth();
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-[#FAF9F6]/95 backdrop-blur-md transition-colors shadow-xs">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
-        {/* Brand wordmark with glossy orange rounded icon */}
+        {/* Brand wordmark with clean rounded icon */}
         <button
           type="button"
           onClick={() => onSelectTab('subjects')}
@@ -45,165 +48,169 @@ export const Header: React.FC<HeaderProps> = ({
           <img
             src="/assets/aistudio/icon_9d2c6e5c.png"
             alt="Quiz Smash Logo"
-            className="h-8 w-8 rounded-xl object-contain shadow-xs border border-orange-200"
+            className="h-8 w-8 rounded-xl object-contain shadow-xs border border-emerald-200"
           />
           <span>
             {isRTL ? (
-              <>كويز <span className="text-orange-500">سماش</span></>
+              <>كويز <span className="text-emerald-600">سماش</span></>
             ) : (
-              <>Quiz <span className="text-orange-500">Smash</span></>
+              <>Quiz <span className="text-emerald-600">Smash</span></>
             )}
           </span>
         </button>
 
-        {/* Clean Nav Tabs with Orange Glossy Rounded active state (Simplified: Dental Faculty, Play, Profile) */}
+        {/* Clean Nav Tabs with Glossy Emerald / Olive buttons - No button text */}
         {user && isUnlocked && (
-          <nav className="hidden sm:flex items-center gap-1.5 p-1 bg-slate-50 rounded-2xl border border-slate-200 text-xs font-bold">
+          <nav className="hidden sm:flex items-center gap-2 p-1.5 bg-[#F2F5ED] rounded-2xl border border-[#D9E2CE]">
             <button
               type="button"
               onClick={() => onSelectTab('subjects')}
-              className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
+              title={isRTL ? 'المواد' : 'Subjects'}
+              aria-label={isRTL ? 'المواد' : 'Subjects'}
+              className={`w-10 h-9 rounded-xl transition-all flex items-center justify-center cursor-pointer ${
                 currentTab === 'subjects'
-                  ? 'btn-glossy-orange'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  ? 'btn-glossy-emerald text-white'
+                  : 'text-emerald-700 hover:text-emerald-900 hover:bg-white'
               }`}
             >
-              <GraduationCap className="h-3.5 w-3.5" />
-              <span>{isRTL ? 'المواد (المرحلة الأولى)' : 'Dental Faculty'}</span>
+              <GraduationCap className={`h-5 w-5 ${currentTab === 'subjects' ? 'text-white' : 'text-emerald-600'}`} />
             </button>
 
             <button
               type="button"
               onClick={() => onSelectTab('play')}
-              className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
+              title={t('navPlay')}
+              aria-label={t('navPlay')}
+              className={`w-10 h-9 rounded-xl transition-all flex items-center justify-center cursor-pointer ${
                 currentTab === 'play'
-                  ? 'btn-glossy-orange'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  ? 'btn-glossy-emerald text-white'
+                  : 'text-purple-700 hover:text-purple-900 hover:bg-white'
               }`}
             >
-              <Play className="h-3.5 w-3.5" />
-              <span>{t('navPlay')}</span>
+              <Play className={`h-4 w-4 fill-current ${currentTab === 'play' ? 'text-white' : 'text-purple-600'}`} />
             </button>
 
             <button
               type="button"
               onClick={() => onSelectTab('profile')}
-              className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
+              title={t('navProfile')}
+              aria-label={t('navProfile')}
+              className={`w-10 h-9 rounded-xl transition-all flex items-center justify-center cursor-pointer ${
                 currentTab === 'profile'
-                  ? 'btn-glossy-orange'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  ? 'btn-glossy-emerald text-white'
+                  : 'text-sky-700 hover:text-sky-900 hover:bg-white'
               }`}
             >
-              <User className="h-3.5 w-3.5" />
-              <span>{t('navProfile')}</span>
+              <User className={`h-5 w-5 ${currentTab === 'profile' ? 'text-white' : 'text-sky-600'}`} />
             </button>
           </nav>
         )}
 
         {/* Right Action Controls: Language, Service Usage Counter, Status & Sign Out */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* Service Usage Counter Badge */}
+          {/* Service Usage Counter Badge (Olive / Emerald) */}
           {user && (
             <div className="flex items-center gap-1.5">
               <span
-                title={isRTL ? `استخدام الخدمة: ${usedLogins} من ${maxLogins}` : `Service Usage: ${usedLogins} of ${maxLogins}`}
-                className="inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-1 rounded-xl bg-orange-50 border border-orange-200 text-orange-700 shadow-xs"
+                title={isRTL ? `المحاولات المتبقية: ${remainingAttempts} من ${maxAttempts}` : `Remaining Attempts: ${remainingAttempts} of ${maxAttempts}`}
+                className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 shadow-xs"
               >
-                <Zap className="w-3 h-3 text-orange-500 fill-orange-500" />
+                <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
                 <span>
                   {isRTL
-                    ? `${usedLogins}/${maxLogins} دخول`
-                    : `${usedLogins}/${maxLogins} Logins`}
+                    ? `${remainingAttempts} محاولة متبقية`
+                    : `${remainingAttempts} Attempts Left`}
                 </span>
               </span>
 
-              {/* Status Badge (VIP button removed) */}
               {isTrialActive && (
-                <span className="text-sky-700 bg-sky-50 px-2.5 py-1 rounded-xl border border-sky-200 font-mono text-[11px] font-bold">
+                <span className="text-[#3E5022] bg-[#F2F5ED] px-2.5 py-1 rounded-xl border border-[#D9E2CE] font-mono text-[11px] font-bold">
                   {timeLeftFormatted}
                 </span>
               )}
             </div>
           )}
 
-          {/* Owner Codes Portal (Strictly visible only for dr.khalil.awad@gmail.com) */}
+          {/* Owner Codes Portal (Strictly visible only for dr.khalil.awad@gmail.com) - Icon Only */}
           {user && user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() && (
             <button
               type="button"
               onClick={() => setIsAdminOpen(true)}
               title={isRTL ? 'مستودع الأكواد (المالك د. خليل)' : 'Owner Codes Bank'}
-              className="flex h-8 items-center gap-1.5 px-2.5 rounded-xl bg-slate-900 text-amber-400 border border-slate-700 hover:bg-slate-800 transition-colors font-bold text-xs cursor-pointer shadow-xs"
+              aria-label={isRTL ? 'مستودع الأكواد (المالك د. خليل)' : 'Owner Codes Bank'}
+              className="flex h-9 w-9 items-center justify-center rounded-xl btn-glossy-olive cursor-pointer shadow-xs"
             >
-              <Shield className="h-3.5 w-3.5 text-amber-400" />
-              <span className="hidden sm:inline">{isRTL ? 'أكواد المالك' : 'Owner Codes'}</span>
+              <Shield className="h-4 w-4 text-amber-300" />
             </button>
           )}
 
-          {/* Language Switcher */}
+          {/* Language Switcher - Icon Only */}
           <button
             type="button"
             onClick={toggleLanguage}
             title={t('switchLangTooltip')}
             aria-label={t('switchLangTooltip')}
-            className="flex h-8 items-center gap-1 px-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-orange-400 hover:text-orange-500 transition-colors font-bold text-xs cursor-pointer shadow-xs"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#D9E2CE] bg-white text-[#4D5D28] hover:border-emerald-500 hover:text-emerald-700 transition-colors cursor-pointer shadow-xs"
           >
-            <Globe className="h-3.5 w-3.5 text-sky-500 shrink-0" />
-            <span>{language === 'en' ? 'العربية' : 'English'}</span>
+            <Globe className="h-4 w-4 text-sky-500 shrink-0" />
           </button>
 
-          {/* Sign Out (Visible in header when unlocked; on PaywallView it is down of the page) */}
+          {/* Sign Out - Icon Only */}
           {user && isUnlocked && (
             <button
               type="button"
               onClick={() => signOutUser()}
               title={isRTL ? 'تسجيل الخروج' : 'Sign Out'}
               aria-label={isRTL ? 'تسجيل الخروج' : 'Sign Out'}
-              className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 hover:text-rose-500 hover:border-rose-300 transition-colors cursor-pointer shadow-xs"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-rose-200 bg-rose-50/60 text-rose-500 hover:text-rose-600 hover:bg-rose-100 hover:border-rose-300 transition-colors cursor-pointer shadow-xs"
             >
-              <LogOut className="h-3.5 w-3.5" />
+              <LogOut className="h-4 w-4 text-rose-500" />
             </button>
           )}
         </div>
       </div>
 
-      {/* Mobile nav tabs */}
+      {/* Mobile nav tabs - Icon Only */}
       {user && isUnlocked && (
-        <div className="flex sm:hidden border-t-2 border-slate-200 bg-white px-3 py-1.5 justify-around text-xs font-bold">
+        <div className="flex sm:hidden border-t border-[#D9E2CE] bg-white px-3 py-2 justify-around">
           <button
             type="button"
             onClick={() => onSelectTab('subjects')}
-            className={`py-1.5 px-3 rounded-xl transition-all flex items-center gap-1.5 ${
+            title={isRTL ? 'المواد' : 'Subjects'}
+            aria-label={isRTL ? 'المواد' : 'Subjects'}
+            className={`w-11 h-9 rounded-xl flex items-center justify-center transition-all ${
               currentTab === 'subjects'
-                ? 'btn-glossy-orange'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'btn-glossy-emerald text-white'
+                : 'text-emerald-600 hover:text-emerald-800'
             }`}
           >
-            <GraduationCap className="h-3.5 w-3.5" />
-            <span>{isRTL ? 'المواد' : 'Subjects'}</span>
+            <GraduationCap className={`h-5 w-5 ${currentTab === 'subjects' ? 'text-white' : 'text-emerald-600'}`} />
           </button>
           <button
             type="button"
             onClick={() => onSelectTab('play')}
-            className={`py-1.5 px-3 rounded-xl transition-all flex items-center gap-1.5 ${
+            title={t('navPlay')}
+            aria-label={t('navPlay')}
+            className={`w-11 h-9 rounded-xl flex items-center justify-center transition-all ${
               currentTab === 'play'
-                ? 'btn-glossy-orange'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'btn-glossy-emerald text-white'
+                : 'text-purple-600 hover:text-purple-800'
             }`}
           >
-            <Play className="h-3.5 w-3.5" />
-            <span>{t('navPlay')}</span>
+            <Play className={`h-4 w-4 fill-current ${currentTab === 'play' ? 'text-white' : 'text-purple-600'}`} />
           </button>
           <button
             type="button"
             onClick={() => onSelectTab('profile')}
-            className={`py-1.5 px-3 rounded-xl transition-all flex items-center gap-1.5 ${
+            title={t('navProfile')}
+            aria-label={t('navProfile')}
+            className={`w-11 h-9 rounded-xl flex items-center justify-center transition-all ${
               currentTab === 'profile'
-                ? 'btn-glossy-orange'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'btn-glossy-emerald text-white'
+                : 'text-sky-600 hover:text-sky-800'
             }`}
           >
-            <User className="h-3.5 w-3.5" />
-            <span>{t('navProfile')}</span>
+            <User className={`h-5 w-5 ${currentTab === 'profile' ? 'text-white' : 'text-sky-600'}`} />
           </button>
         </div>
       )}

@@ -48,6 +48,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     usedLogins,
     maxLogins,
     remainingLogins,
+    remainingAttempts,
+    accessedCount,
+    maxAttempts,
   } = useAuth();
 
   const totalAnswered = activeProfile.totalCorrect + activeProfile.totalWrong;
@@ -74,24 +77,24 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       <div className="rounded-2xl border-2 border-slate-200 bg-white p-5 sm:p-6 shadow-xs">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="h-12 w-12 rounded-2xl btn-glossy-orange flex items-center justify-center font-black text-white text-lg shadow-sm shrink-0">
+            <div className="h-12 w-12 rounded-2xl btn-glossy-emerald flex items-center justify-center font-bold text-white text-lg shadow-xs shrink-0">
               {(user?.user_metadata?.first_name?.charAt(0) || user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || activeProfile.username.charAt(0) || 'U').toUpperCase()}
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-lg font-black text-slate-900">
+                <h1 className="text-lg font-bold text-slate-900">
                   {user?.user_metadata?.full_name || activeProfile.username || user?.email?.split('@')[0]}
                 </h1>
                 {hasSubscription ? (
-                  <span className="text-[11px] font-bold text-orange-600 bg-orange-50 px-2.5 py-0.5 rounded-xl border border-orange-200">
+                  <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-xl border border-emerald-200">
                     {isRTL ? 'اشتراك 100 دخول' : '100-Login Subscription'}
                   </span>
                 ) : isPermanent ? (
-                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-xl border border-emerald-200">
+                  <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-xl border border-emerald-200">
                     {isRTL ? 'اشتراك مفعل' : 'Active Subscription'}
                   </span>
                 ) : isTrialActive ? (
-                  <span className="text-[11px] font-bold text-sky-600 bg-sky-50 px-2.5 py-0.5 rounded-xl border border-sky-200 font-mono">
+                  <span className="text-[11px] font-bold text-[#4D5D28] bg-[#F2F5ED] px-2.5 py-0.5 rounded-xl border border-[#D9E2CE] font-mono">
                     {isRTL ? `تجربة يومين: ${timeLeftFormatted}` : `2-Day Trial: ${timeLeftFormatted}`}
                   </span>
                 ) : null}
@@ -103,19 +106,20 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <button
             type="button"
             onClick={onStartQuiz}
-            className="w-full sm:w-auto px-6 py-2.5 rounded-2xl btn-glossy-orange text-xs font-black shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+            title={t('navPlay')}
+            aria-label={t('navPlay')}
+            className="w-10 h-10 rounded-xl btn-glossy-emerald text-white flex items-center justify-center cursor-pointer shadow-xs transition-transform active:scale-95 shrink-0"
           >
-            <Play className="h-3.5 w-3.5 fill-white" />
-            <span>{t('navPlay')}</span>
+            <Play className="h-4 w-4 fill-white" />
           </button>
         </div>
       </div>
 
       {/* OWNER CODES BANK CARD (EXCLUSIVELY FOR DR. KHALIL) */}
       {user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() && (
-        <div className="mt-4 rounded-2xl border-2 border-slate-900 bg-slate-900 text-white p-5 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="mt-4 rounded-2xl border border-slate-900 bg-slate-900 text-white p-5 shadow-md flex items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-orange-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+            <div className="w-11 h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
               <Shield className="w-5 h-5" />
             </div>
             <div>
@@ -137,43 +141,45 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <button
             type="button"
             onClick={() => setIsAdminOpen(true)}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black cursor-pointer shrink-0 transition-colors shadow-xs"
+            title={isRTL ? 'فتح مستودع الأكواد' : 'Open Codes Bank'}
+            aria-label={isRTL ? 'فتح مستودع الأكواد' : 'Open Codes Bank'}
+            className="w-10 h-10 rounded-xl btn-glossy-olive text-white flex items-center justify-center cursor-pointer shrink-0 transition-transform active:scale-95 shadow-xs"
           >
-            {isRTL ? 'فتح مستودع الأكواد' : 'Open Codes Bank'}
+            <Shield className="w-5 h-5" />
           </button>
         </div>
       )}
 
-      {/* SECTION 1.5: SUBSCRIPTION USAGE & DAILY LOGIN CARD */}
-      <div className="mt-4 rounded-2xl border-2 border-slate-200 bg-white p-5 shadow-xs">
+      {/* SUBSCRIPTION USAGE CARD */}
+      <div className="mt-4 rounded-2xl border border-[#D9E2CE] bg-white p-5 shadow-xs">
         <div className="flex items-center justify-between gap-3 mb-3">
           <div className="flex items-center gap-2">
-            <Zap className="w-5 h-5 text-orange-500 fill-orange-500" />
-            <h2 className="text-sm font-extrabold text-slate-900">
-              {isRTL ? 'رصيد استخدام الخدمة وتسجيل الدخول' : 'Service Usage & Subscription Counter'}
+            <Zap className="w-5 h-5 text-emerald-600 fill-emerald-600" />
+            <h2 className="text-sm font-bold text-slate-900">
+              {isRTL ? 'رصيد المحاولات المتبقية للاستخدام' : 'Remaining Access Attempts'}
             </h2>
           </div>
-          <span className="text-xs font-black text-orange-600 bg-orange-50 px-2.5 py-1 rounded-xl border border-orange-200 font-mono">
-            {usedLogins} / {maxLogins} {isRTL ? 'مرات استخدام' : 'Logins Used'}
+          <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200 font-mono">
+            {remainingAttempts} / {maxAttempts} {isRTL ? 'محاولة متبقية' : 'Attempts Left'}
           </span>
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden mb-3">
+        <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden mb-3">
           <div
-            className="h-full bg-gradient-to-r from-orange-400 to-amber-500 rounded-full transition-all duration-500"
-            style={{ width: `${Math.min(100, Math.max(5, (usedLogins / maxLogins) * 100))}%` }}
+            className="h-full bg-emerald-600 rounded-full transition-all duration-500"
+            style={{ width: `${Math.min(100, Math.max(3, (remainingAttempts / maxAttempts) * 100))}%` }}
           />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-            <span className="text-slate-500 text-[11px] block">{isRTL ? 'مرات الاستخدام الفعلية' : 'Times Used Service'}</span>
-            <span className="font-mono text-base font-black text-slate-900">{usedLogins}</span>
+            <span className="text-slate-500 text-[11px] block">{isRTL ? 'المحاولات المستهلكة' : 'Accessed Attempts'}</span>
+            <span className="font-mono text-base font-bold text-slate-900">{accessedCount}</span>
           </div>
-          <div className="p-3 bg-orange-50/60 rounded-xl border border-orange-200">
-            <span className="text-orange-800 text-[11px] block">{isRTL ? 'مرات الدخول المتبقية' : 'Logins Remaining'}</span>
-            <span className="font-mono text-base font-black text-orange-600">{remainingLogins}</span>
+          <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200">
+            <span className="text-emerald-900 text-[11px] block">{isRTL ? 'المحاولات المتبقية' : 'Remaining Attempts'}</span>
+            <span className="font-mono text-base font-bold text-emerald-700">{remainingAttempts}</span>
           </div>
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
             <span className="text-slate-500 text-[11px] block">{isRTL ? 'إعادة تسجيل الدخول اليومي' : 'Daily Re-login Security'}</span>

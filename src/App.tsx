@@ -17,7 +17,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { InstallModal } from './components/InstallModal';
 import { fetchCnsTestQuestions } from './services/cnsTestService';
 import { CourseSelectionView, CourseStage, DENTAL_COURSES } from './components/CourseSelectionView';
-import { Lock } from 'lucide-react';
+import { Lock, ArrowLeft, ArrowRight } from 'lucide-react';
 
 function QuizSmashApp() {
   const [currentTab, setCurrentTab] = useState<'subjects' | 'play' | 'bank' | 'profile'>('subjects');
@@ -109,7 +109,7 @@ function QuizSmashApp() {
   }, [user, isLoading]);
 
   return (
-    <div className="min-h-screen bg-[#FAF9F6] text-slate-900 flex flex-col font-sans selection:bg-indigo-600 selection:text-white transition-colors duration-200">
+    <div className="min-h-screen bg-[#FAFBF8] text-slate-900 flex flex-col font-sans selection:bg-emerald-600 selection:text-white transition-colors duration-200">
       {/* Universal Top Bar with Quiz Smash & Theme & Language Switcher */}
       <Header
         currentTab={currentTab}
@@ -120,7 +120,7 @@ function QuizSmashApp() {
       <main className="flex-1 pb-16">
         {isLoading ? (
           <div className="min-h-[50vh] flex items-center justify-center">
-            <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : !selectedCourse ? (
           /* Step 0: User must select course first (Course 1 is functional, 2-5 appear not functioning) */
@@ -156,14 +156,14 @@ function QuizSmashApp() {
         ) : allowedCourse && selectedCourse && selectedCourse.id !== allowedCourse ? (
           /* Enforce requirement: codes can ONLY login in first course not other courses */
           <div className="min-h-[60vh] flex items-center justify-center p-4">
-            <div className="max-w-md w-full bg-white border-2 border-amber-300 rounded-3xl p-6 shadow-xl text-center">
-              <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto mb-3 shadow-xs">
+            <div className="max-w-md w-full bg-white border border-[#D9E2CE] rounded-3xl p-6 shadow-sm text-center">
+              <div className="w-14 h-14 rounded-2xl bg-[#F2F5ED] text-[#4D5D28] border border-[#D9E2CE] flex items-center justify-center mx-auto mb-3 shadow-xs">
                 <Lock className="w-7 h-7" />
               </div>
-              <h3 className="text-lg font-black text-slate-900 mb-2">
+              <h3 className="text-lg font-bold text-slate-900 mb-2">
                 {isRTL ? 'الكود مخصص للمرحلة الأولى فقط' : 'Code Restricted to Course 1 Only'}
               </h3>
-              <p className="text-xs text-slate-600 leading-relaxed mb-4">
+              <p className="text-xs text-[#556B2F] leading-relaxed mb-4">
                 {isRTL
                   ? 'كود الـ 13 رقماً المفعل في حسابك مخصص حصرياً للمرحلة الأولى (First Course). لا يمكن استخدامه لدخول المواد والمراحل الأخرى.'
                   : 'Your activated 13-figure code is strictly restricted to Course 1 (First Level) and cannot unlock other courses.'}
@@ -181,9 +181,11 @@ function QuizSmashApp() {
                     }
                   }
                 }}
-                className="btn-glossy-orange text-xs font-bold py-2.5 px-5 rounded-xl cursor-pointer shadow-sm hover:scale-102 transition-transform"
+                title={isRTL ? 'العودة إلى المرحلة الأولى' : 'Return to Course 1'}
+                aria-label={isRTL ? 'العودة إلى المرحلة الأولى' : 'Return to Course 1'}
+                className="w-12 h-12 mx-auto rounded-xl btn-glossy-emerald text-white flex items-center justify-center cursor-pointer shadow-sm transition-transform active:scale-95"
               >
-                {isRTL ? 'العودة إلى المرحلة الأولى المتاحة' : 'Return to Course 1'}
+                {isRTL ? <ArrowLeft className="w-5 h-5 text-white" /> : <ArrowRight className="w-5 h-5 text-white" />}
               </button>
             </div>
           </div>
@@ -238,24 +240,6 @@ function QuizSmashApp() {
         )}
       </main>
 
-      {/* Footer with clean dividing line */}
-      <footer className="border-t-2 border-slate-200 bg-white py-6 text-center text-xs text-slate-500 transition-colors">
-        <div className="mx-auto max-w-7xl px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="font-extrabold text-slate-900">{t('brandName')}</span>
-            <span>·</span>
-            <span>{t('footerTagline')}</span>
-          </div>
-
-          <div className="flex items-center gap-4 text-[11px] text-slate-500">
-            <span>{t('footerFeature1')}</span>
-            <span>·</span>
-            <span>{t('footerFeature2')}</span>
-            <span>·</span>
-            <span>{t('footerFeature3')}</span>
-          </div>
-        </div>
-      </footer>
 
       {/* Install on Phone / APK Modal */}
       <InstallModal

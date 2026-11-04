@@ -90,37 +90,39 @@ export const QuestionBankView: React.FC<QuestionBankViewProps> = ({
           </p>
         </div>
 
-        {/* Top Actions: CNS Test Button & Start Quiz */}
+        {/* Top Actions: CNS Test Button & Start Quiz - Glossy Icon Only */}
         <div className="flex items-center gap-2.5">
           <button
             type="button"
             disabled={isLoadingCns}
             onClick={handleLoadCnsTest}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-2xl btn-glossy-orange text-xs font-black cursor-pointer shadow-sm disabled:opacity-50"
+            title={isRTL ? 'تحميل CNS' : 'Load CNS'}
+            aria-label={isRTL ? 'تحميل CNS' : 'Load CNS'}
+            className="w-10 h-10 rounded-xl btn-glossy-emerald text-white flex items-center justify-center cursor-pointer shadow-xs disabled:opacity-50 transition-transform active:scale-95"
           >
             {isLoadingCns ? (
-              <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
-              <Brain className="h-4 w-4 fill-white" />
+              <Brain className="h-4 w-4" />
             )}
-            <span>{isLoadingCns ? (isRTL ? 'جاري التحميل...' : 'Loading...') : 'CNS Test'}</span>
           </button>
 
           {questions.length > 0 && (
             <button
               type="button"
               onClick={onLaunchQuiz}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl btn-glossy-orange-outline text-xs font-black cursor-pointer"
+              title={t('navPlay')}
+              aria-label={t('navPlay')}
+              className="w-10 h-10 rounded-xl btn-glossy-olive text-white flex items-center justify-center cursor-pointer shadow-xs transition-transform active:scale-95"
             >
-              <Play className="h-3.5 w-3.5 fill-orange-500 text-orange-500" />
-              <span>{t('navPlay')}</span>
+              <Play className="h-4 w-4 fill-white" />
             </button>
           )}
         </div>
       </div>
 
       {/* LINE SEPARATING HEADER FROM CONTENT */}
-      <div className="w-full border-b-2 border-slate-200 my-6" />
+      <div className="w-full border-b border-[#D9E2CE] my-6" />
 
       {feedback && (
         <div
@@ -143,14 +145,14 @@ export const QuestionBankView: React.FC<QuestionBankViewProps> = ({
 
       {/* Main Content: Either Empty state or Question List */}
       {questions.length === 0 ? (
-        <div className="rounded-2xl border-2 border-slate-200 p-8 sm:p-12 text-center bg-white shadow-xs">
-          <div className="mx-auto w-14 h-14 rounded-2xl btn-glossy-orange flex items-center justify-center mb-4 text-white shadow-md">
+        <div className="rounded-2xl border border-[#D9E2CE] p-8 sm:p-12 text-center bg-white shadow-xs">
+          <div className="mx-auto w-14 h-14 rounded-2xl bg-[#F2F5ED] border border-[#D9E2CE] flex items-center justify-center mb-4 text-[#4D5D28] shadow-xs">
             <Brain className="h-7 w-7" />
           </div>
-          <h3 className="text-xl font-black text-slate-900 mb-1.5">
+          <h3 className="text-xl font-bold text-slate-900 mb-1.5">
             CNS Test
           </h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto mb-6 leading-relaxed">
+          <p className="text-xs text-[#556B2F] max-w-sm mx-auto mb-6 leading-relaxed">
             {isRTL
               ? 'اضغط أدناه لتحميل اختبار الـ CNS مباشرة من Supabase (105 أسئلة MCQ).'
               : 'Click below to fetch the Central Nervous System MCQ bank (105 questions) directly from Supabase.'}
@@ -160,14 +162,15 @@ export const QuestionBankView: React.FC<QuestionBankViewProps> = ({
             type="button"
             disabled={isLoadingCns}
             onClick={handleLoadCnsTest}
-            className="px-8 py-3.5 rounded-2xl font-black text-sm btn-glossy-orange flex items-center justify-center gap-2.5 mx-auto cursor-pointer shadow-md disabled:opacity-50"
+            title={isRTL ? 'تحميل CNS' : 'Load CNS'}
+            aria-label={isRTL ? 'تحميل CNS' : 'Load CNS'}
+            className="w-12 h-12 rounded-2xl btn-glossy-emerald text-white flex items-center justify-center mx-auto cursor-pointer shadow-md disabled:opacity-50 transition-transform active:scale-95"
           >
             {isLoadingCns ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
-              <Brain className="h-4 w-4" />
+              <Brain className="h-5 w-5" />
             )}
-            <span>{isLoadingCns ? (isRTL ? 'جاري التحميل...' : 'Loading...') : 'CNS Test'}</span>
           </button>
         </div>
       ) : (
@@ -181,7 +184,7 @@ export const QuestionBankView: React.FC<QuestionBankViewProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={isRTL ? 'بحث في الأسئلة...' : 'Search questions...'}
-                className="w-full pl-9 pr-3 rtl:pl-3 rtl:pr-9 py-2.5 text-xs rounded-2xl border-2 border-slate-200 bg-white text-slate-900 focus:outline-none focus:border-orange-500"
+                className="w-full pl-9 pr-3 rtl:pl-3 rtl:pr-9 py-2.5 text-xs rounded-xl border border-[#D9E2CE] bg-white text-slate-900 focus:outline-none focus:border-emerald-500"
               />
             </div>
 
@@ -199,12 +202,12 @@ export const QuestionBankView: React.FC<QuestionBankViewProps> = ({
             {filteredQuestions.map((q, idx) => (
               <div
                 key={q.id}
-                className="rounded-2xl border-2 border-slate-200 bg-white p-5 transition-colors shadow-xs"
+                className="rounded-2xl border border-[#D9E2CE] bg-white p-5 transition-colors shadow-xs"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-[11px] font-mono font-bold text-orange-500 bg-orange-50 px-2 py-0.5 rounded-lg border border-orange-200">
+                      <span className="text-[11px] font-mono font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
                         #{idx + 1}
                       </span>
                     </div>

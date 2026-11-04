@@ -148,17 +148,17 @@ CREATE TABLE IF NOT EXISTS public.course_access_codes (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/70 backdrop-blur-xs animate-in fade-in">
       <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl border-2 border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
         {/* HEADER */}
-        <div className="p-4 sm:p-5 border-b-2 border-slate-200 bg-slate-900 text-white flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-b border-slate-200 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-orange-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+            <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
               <Shield className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base sm:text-lg font-black tracking-tight">
+                <h3 className="text-base sm:text-lg font-bold tracking-tight">
                   {isRTL ? 'مستودع الأكواد الخاص (د. خليل عواد)' : 'Owner Private Code Bank (Dr. Khalil)'}
                 </h3>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                   100 Codes · 13 Figures
                 </span>
               </div>
@@ -184,19 +184,19 @@ CREATE TABLE IF NOT EXISTS public.course_access_codes (
             onClick={() => setActiveTab('codes')}
             className={`py-2 px-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'codes'
-                ? 'border-orange-500 text-orange-600 font-black'
+                ? 'border-indigo-600 text-indigo-600 font-bold'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
             <KeyRound className="w-3.5 h-3.5" />
-            <span>{isRTL ? 'قائمة الـ 100 كود (لإرسالها للطلاب)' : '100 Codes List'}</span>
+            <span>{isRTL ? 'قائمة الـ 100 كود' : '100 Codes List'}</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('sql')}
             className={`py-2 px-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'sql'
-                ? 'border-orange-500 text-orange-600 font-black'
+                ? 'border-indigo-600 text-indigo-600 font-bold'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -216,7 +216,7 @@ CREATE TABLE IF NOT EXISTS public.course_access_codes (
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={isRTL ? 'بحث برقم الكود أو التسلسل (مثال: 01 أو 187...)' : 'Search by code or #...'}
-                  className="w-full pl-9 pr-3 rtl:pl-3 rtl:pr-9 py-2 text-xs rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:outline-none focus:border-orange-500 font-mono"
+                  className="w-full pl-9 pr-3 rtl:pl-3 rtl:pr-9 py-2 text-xs rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:outline-none focus:border-indigo-500 font-mono"
                 />
               </div>
 
@@ -237,9 +237,9 @@ CREATE TABLE IF NOT EXISTS public.course_access_codes (
                 <button
                   type="button"
                   onClick={handleDownloadTxt}
-                  className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-300 transition-colors cursor-pointer"
+                  className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors cursor-pointer"
                 >
-                  <Download className="w-3.5 h-3.5 text-orange-600" />
+                  <Download className="w-3.5 h-3.5 text-indigo-600" />
                   <span>{isRTL ? 'تنزيل TXT' : 'Download TXT'}</span>
                 </button>
               </div>
@@ -255,7 +255,7 @@ CREATE TABLE IF NOT EXISTS public.course_access_codes (
                   return (
                     <div
                       key={code}
-                      className="p-2.5 rounded-xl border border-slate-200 hover:border-orange-400 bg-slate-50/70 hover:bg-orange-50/40 transition-colors flex items-center justify-between gap-2"
+                      className="p-2.5 rounded-xl border border-slate-200 hover:border-indigo-400 bg-slate-50/70 hover:bg-indigo-50/20 transition-colors flex items-center justify-between gap-2"
                     >
                       <div className="flex items-center gap-2 overflow-hidden">
                         <span className="text-[10px] font-black text-slate-400 font-mono w-7 shrink-0">

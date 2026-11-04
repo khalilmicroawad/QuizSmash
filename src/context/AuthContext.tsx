@@ -8,6 +8,7 @@ import {
   is13FigureFormat,
 } from '../data/course1Codes';
 import { CourseCodeService } from '../services/courseCodeService';
+import { UserAccessTrackerService, UserAccessRecord } from '../services/userAccessTrackerService';
 
 export interface AccessState {
   isUnlocked: boolean;
@@ -36,6 +37,12 @@ interface AuthContextType {
   maxLogins: number;
   usedLogins: number;
   remainingLogins: number;
+  // User Access Tracking based on unique identifier
+  remainingAttempts: number;
+  accessedCount: number;
+  maxAttempts: number;
+  accessRecord: UserAccessRecord | null;
+  refreshAccessTracking: () => Promise<void>;
   dailyLoginExpiredNotice: boolean;
   dismissDailyNotice: () => void;
   ownerWhatsApp: string;
@@ -114,6 +121,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [dailyLoginExpiredNotice, setDailyLoginExpiredNotice] = useState<boolean>(false);
+  const [accessRecord, setAccessRecord] = useState<UserAccessRecord | null>(null);
 
   const [access, setAccess] = useState<AccessState>({
     isUnlocked: false,
@@ -136,6 +144,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [secondsRemaining, setSecondsRemaining] = useState<number>(0);
+
+  const refreshAccessTracking = async () => {
+    if (user?.id) {
+      const rec = await UserAccessTrackerService.recordAccess(user.id, user.email || undefined);
+      setAccessRecord(rec);
+    }
+  };
 
   // Load user access state helper
   const loadUserAccess = (userId: string): AccessState => {
@@ -241,12 +256,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const updated = recordDailyLoginUsage(userAccess, session.user.id);
         setUser(session.user);
         setAccess(updated);
+        UserAccessTrackerService.recordAccess(session.user.id, session.user.email || undefined).then((rec) => {
+          if (isMounted) setAccessRecord(rec);
+        });
 
         if (window.location.pathname === '/login') {
           window.history.replaceState({}, '', '/');
         }
       } else {
         setUser(null);
+        setAccessRecord(null);
         if (window.location.pathname !== '/login') {
           window.history.replaceState({}, '', '/login');
         }
@@ -255,6 +274,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }).catch(() => {
       if (isMounted) {
         setUser(null);
+        setAccessRecord(null);
         if (window.location.pathname !== '/login') {
           window.history.replaceState({}, '', '/login');
         }
@@ -271,12 +291,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session.user);
         setAccess(updated);
         setDailyLoginExpiredNotice(false);
+        UserAccessTrackerService.recordAccess(session.user.id, session.user.email || undefined).then((rec) => {
+          if (isMounted) setAccessRecord(rec);
+        });
 
         if (window.location.pathname === '/login') {
           window.history.replaceState({}, '', '/');
         }
       } else {
         setUser(null);
+        setAccessRecord(null);
         setAccess({
           isUnlocked: false,
           isPermanent: false,
@@ -610,6 +634,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const maxLogins = access.maxLogins || MAX_SUBSCRIPTION_LOGINS;
   const remainingLogins = Math.max(0, maxLogins - usedLogins);
 
+  const maxAttempts = accessRecord?.maxAttempts ?? maxLogins;
+  const accessedCount = accessRecord?.accessedCount ?? usedLogins;
+  const remainingAttempts = accessRecord?.remainingAttempts ?? Math.max(0, maxAttempts - accessedCount);
+
   return (
     <AuthContext.Provider
       value={{
@@ -625,6 +653,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         maxLogins,
         usedLogins,
         remainingLogins,
+        remainingAttempts,
+        accessedCount,
+        maxAttempts,
+        accessRecord,
+        refreshAccessTracking,
         dailyLoginExpiredNotice,
         dismissDailyNotice,
         ownerWhatsApp,
