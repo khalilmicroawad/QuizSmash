@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Play, Zap, Globe, LogOut, GraduationCap, Shield } from 'lucide-react';
+import { User, Play, Zap, Globe, LogOut, GraduationCap, Shield, Timer } from 'lucide-react';
 import { UserProfile } from '../types/quiz';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -124,8 +124,12 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
 
               {isTrialActive && (
-                <span className="text-[#3E5022] bg-[#F2F5ED] px-2.5 py-1 rounded-xl border border-[#D9E2CE] font-mono text-[11px] font-bold">
-                  {timeLeftFormatted}
+                <span
+                  title={isRTL ? `تجربة مجانية شاملة (يومان) - الوقت المتبقي: ${timeLeftFormatted}` : `2-Day Free Trial - Time Left: ${timeLeftFormatted}`}
+                  className="inline-flex items-center gap-1 text-[#3E5022] bg-[#F2F5ED] px-2.5 py-1 rounded-xl border border-[#D9E2CE] font-mono text-[11px] font-bold"
+                >
+                  <Timer className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>{isRTL ? `تجربة: ${timeLeftFormatted}` : `Trial: ${timeLeftFormatted}`}</span>
                 </span>
               )}
             </div>

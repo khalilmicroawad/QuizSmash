@@ -68,8 +68,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const LOCAL_ACCESS_PREFIX = 'quiz_smash_user_access_v6_';
 const LOCAL_WHATSAPP_KEY = 'quiz_smash_owner_whatsapp_v6';
 
-// Default owner WhatsApp number (can be edited in app by owner)
-export const DEFAULT_WHATSAPP_NUMBER = '9647700000000';
+// Default owner WhatsApp number (Dr. Khalil Awad: +9647725631342)
+export const DEFAULT_WHATSAPP_NUMBER = '9647725631342';
 export const PRICE_IQD = '20,000 IQD';
 export const MAX_SUBSCRIPTION_LOGINS = 100;
 
@@ -136,7 +136,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [ownerWhatsApp, setOwnerWhatsAppState] = useState<string>(() => {
     try {
       const stored = localStorage.getItem(LOCAL_WHATSAPP_KEY);
-      if (stored) return stored;
+      if (stored && stored !== '9647700000000' && stored.length >= 10) return stored;
     } catch {
       // Ignore
     }
@@ -199,7 +199,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // If it's a new day or session hasn't been recorded yet for today
     if (currentAccess.lastLoginDateString !== today || storedSessionDay !== today) {
-      const nextUsed = (currentAccess.usedLogins || 0) + 1;
+      // REQUIREMENT: The 2 days trial does NOT take credits from the 100 days subscription!
+      const isTrial = Boolean(!currentAccess.hasSubscription && currentAccess.trialExpiresAt && currentAccess.trialExpiresAt > Date.now());
+      const isPaidSubscription = Boolean(currentAccess.hasSubscription && !isTrial);
+      const nextUsed = isPaidSubscription ? (currentAccess.usedLogins || 0) + 1 : (currentAccess.usedLogins || 0);
       const isExhausted = currentAccess.hasSubscription && nextUsed > currentAccess.maxLogins;
 
       const updated: AccessState = {
@@ -495,7 +498,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         trialExpiresAt: now + DURATION_48_HOURS_MS,
         lastCodeUsed: code,
         maxLogins: MAX_SUBSCRIPTION_LOGINS,
-        usedLogins: Math.max(1, access.usedLogins),
+        usedLogins: access.hasSubscription ? access.usedLogins : 0,
         lastLoginDateString: today,
         lastLoginTimestamp: now,
       };
@@ -508,7 +511,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return {
         success: true,
         type: 'trial' as const,
-        message: 'تم تفعيل التجربة المجانية لمدة يومين (48 ساعة) بنجاح للمرحلة الأولى!',
+        message: 'تم تفعيل التجربة المجانية لمدة يومين (48 ساعة) بنجاح للمرحلة الأولى دون استهلاك رصيد الاشتراك!',
       };
     }
 
@@ -531,7 +534,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       trialExpiresAt: now + DURATION_48_HOURS_MS,
       lastCodeUsed: code,
       maxLogins: MAX_SUBSCRIPTION_LOGINS,
-      usedLogins: Math.max(1, access.usedLogins),
+      usedLogins: access.hasSubscription ? access.usedLogins : 0,
       lastLoginDateString: today,
       lastLoginTimestamp: now,
     };

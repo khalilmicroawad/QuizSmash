@@ -119,8 +119,8 @@ export const HumanAnatomySectionsModal: React.FC<HumanAnatomySectionsModalProps>
             </span>
             <span className="text-[#556B2F] text-[11px]">
               {isRTL
-                ? 'دمج جميع ملفات Word الخمسة (1.docx حتى 5.docx)'
-                : 'Combines all 5 modules (1.docx through 5.docx)'}
+                ? 'دمج جميع الأقسام الخمسة في اختبار واحد شامل'
+                : 'Combines all 5 curriculum modules into one exam'}
             </span>
           </div>
 

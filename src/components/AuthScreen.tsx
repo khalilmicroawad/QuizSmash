@@ -16,6 +16,7 @@ import { supabase } from '../supabaseClient.js';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { CourseStage } from './CourseSelectionView';
+import { OwnerNotificationService } from '../services/ownerNotificationService';
 
 interface AuthScreenProps {
   onBackToCourses?: () => void;
@@ -163,6 +164,21 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onBackToCourses, selecte
 
           // Switch to Sign In mode and keep/pre-fill the email used during signup
           const signedUpEmail = email.trim();
+
+          // Notify owner Dr. Khalil Awad (dr.khalil.awad@gmail.com) of new registration
+          const courseLabel = selectedCourse
+            ? isRTL ? selectedCourse.nameAr : selectedCourse.nameEn
+            : 'First Course (المرحلة الأولى - طب الأسنان)';
+
+          OwnerNotificationService.notifyNewRegistration({
+            email: signedUpEmail,
+            fullName: formattedFullName,
+            courseName: courseLabel,
+            courseId: selectedCourse?.id || 'stage-1',
+          }).catch((notifyErr) => {
+            console.warn('Owner notification background task:', notifyErr);
+          });
+
           setMode('signin');
           setEmail(signedUpEmail);
           setPassword('');

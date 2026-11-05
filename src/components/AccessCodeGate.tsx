@@ -171,22 +171,38 @@ export const AccessCodeGate: React.FC<AccessCodeGateProps> = ({
         {/* LINE SEPARATING HEADER FROM TRIAL SECTION */}
         <div className="w-full border-b border-[#D9E2CE] my-4" />
 
-        {/* SECTION 2: 2-DAY FREE TRIAL (48 HOURS) - ICON ONLY */}
-        <div>
+        {/* SECTION 2: 2-DAY FREE TRIAL (48 HOURS) - CLEAR & PROMINENT */}
+        <div className="rounded-2xl border-2 border-emerald-500/40 bg-gradient-to-br from-emerald-50/80 via-[#F2F5ED] to-white p-4 shadow-sm text-center">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-600 text-white text-[11px] font-black uppercase tracking-wider mb-2 shadow-xs">
+            <Timer className="w-3.5 h-3.5" />
+            <span>{isRTL ? 'تجربة مجانية شاملة (يومان / 48 ساعة)' : '2-Day Full Free Trial (48 Hours)'}</span>
+          </div>
+
+          <h3 className="text-sm font-black text-slate-900 mb-1">
+            {isRTL ? 'جرّب جميع بنوك الأسئلة مجاناً لمدة 48 ساعة' : 'Practice All Question Banks Free for 48 Hours'}
+          </h3>
+
+          <p className="text-[11px] text-[#4D5D28] leading-relaxed mb-3">
+            {isRTL
+              ? 'وصول فوري وشامل لجميع مواد المرحلة الأولى بدون كود وبدون شروط لمدة يومين كاملين.'
+              : 'Instant full access to all Course 1 subjects & question banks without code for 48 hours.'}
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] text-emerald-800 font-semibold mb-3">
+            <span className="inline-flex items-center gap-1">✓ {isRTL ? 'وصول لكافة المواد' : 'All Subjects Unlocked'}</span>
+            <span className="inline-flex items-center gap-1">✓ {isRTL ? 'لا تستهلك رصيد الـ 100 دخول' : 'Keeps 100-login credits intact'}</span>
+            <span className="inline-flex items-center gap-1">✓ {isRTL ? '48 ساعة كاملة' : 'Full 48 Hours'}</span>
+          </div>
+
           <button
             type="button"
             onClick={handleStartTrial}
-            title={isRTL ? 'بدء تجربة مجانية (48 ساعة)' : 'Start 2-Day Free Trial (48 Hours)'}
-            aria-label={isRTL ? 'بدء تجربة مجانية (48 ساعة)' : 'Start 2-Day Free Trial (48 Hours)'}
-            className="w-full py-3.5 px-4 rounded-xl btn-glossy-emerald text-white flex items-center justify-center cursor-pointer shadow-md transition-transform active:scale-[0.99]"
+            title={isRTL ? 'بدء التجربة المجانية لمدة يومين (48 ساعة)' : 'Start 2-Day Free Trial (48 Hours)'}
+            aria-label={isRTL ? 'بدء التجربة المجانية لمدة يومين (48 ساعة)' : 'Start 2-Day Free Trial (48 Hours)'}
+            className="w-full py-3 px-4 rounded-xl btn-glossy-emerald text-white flex items-center justify-center cursor-pointer shadow-md transition-transform active:scale-[0.99]"
           >
             <Timer className="w-5 h-5" />
           </button>
-          <p className="mt-1.5 text-[11px] text-[#556B2F] text-center">
-            {isRTL
-              ? 'تتيح لك حل جميع أسئلة المرحلة الأولى مجاناً لمدة 48 ساعة.'
-              : 'Practice all Course 1 MCQs free for 48h.'}
-          </p>
         </div>
 
         {/* LINE SEPARATING TRIAL FROM CODE ENTRY SECTION */}
@@ -287,7 +303,7 @@ export const AccessCodeGate: React.FC<AccessCodeGateProps> = ({
                   type="text"
                   value={phoneInput}
                   onChange={(e) => setPhoneInput(e.target.value)}
-                  placeholder="9647700000000"
+                  placeholder="9647725631342"
                   className="flex-1 px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-slate-900 font-mono text-xs focus:outline-none focus:border-emerald-500"
                 />
                 <button

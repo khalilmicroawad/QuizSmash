@@ -118,8 +118,8 @@ export const DentalAnatomySectionsModal: React.FC<DentalAnatomySectionsModalProp
             </span>
             <span className="text-[#556B2F] text-[11px]">
               {isRTL
-                ? 'دمج جميع ملفات Word الأربعة (first.docx حتى fourth.docx)'
-                : 'Combines all 4 modules (first.docx through fourth.docx)'}
+                ? 'دمج جميع الأقسام الأربعة في اختبار واحد شامل'
+                : 'Combines all 4 curriculum modules into one exam'}
             </span>
           </div>
 

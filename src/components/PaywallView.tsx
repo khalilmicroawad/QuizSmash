@@ -134,8 +134,8 @@ export const PaywallView: React.FC<PaywallViewProps> = ({
                 ? 'تم استهلاك رصيد تسجيل الدخول'
                 : '100 Logins Limit Reached'
               : isRTL
-              ? 'انتهت الفترة التجريبية (يومان)'
-              : '2-Day Free Trial Expired'}
+              ? 'انتهت الفترة التجريبية المجانية (يومان / 48 ساعة)'
+              : '2-Day Free Trial (48 Hours) Expired'}
           </h2>
           <p className="mt-1.5 text-xs text-[#556B2F] max-w-xs mx-auto leading-relaxed">
             {isLoginsDepleted
@@ -143,8 +143,8 @@ export const PaywallView: React.FC<PaywallViewProps> = ({
                 ? `لقد استخدمت جميع مرات تسجيل الدخول المتاحة (${maxLogins} مرة). يرجى تجديد الاشتراك بـ ${PRICE_IQD}.`
                 : `You have reached your 100 logins limit. Please renew your subscription for ${PRICE_IQD}.`
               : isRTL
-              ? `للاستمرار في استخدام المنصة، يرجى تفعيل كود الـ 13 رقماً لاشتراك 100 تسجيل دخول مقابل ${PRICE_IQD}.`
-              : `To continue using the platform, activate a 13-figure 100-login code for ${PRICE_IQD}.`}
+              ? `انتهت فترة التجربة المجانية (48 ساعة) المخصصة للمرحلة الأولى. للاستمرار في حل جميع بنوك الأسئلة، فعّل كود الـ 13 رقماً (100 تسجيل دخول) أو اطلبه الآن مقابل ${PRICE_IQD}.`
+              : `Your 48-hour free trial for Course 1 has ended. To continue practicing all question banks, activate a 13-figure 100-login code or order via WhatsApp for ${PRICE_IQD}.`}
           </p>
         </div>
 
@@ -258,7 +258,7 @@ export const PaywallView: React.FC<PaywallViewProps> = ({
                   type="text"
                   value={phoneInput}
                   onChange={(e) => setPhoneInput(e.target.value)}
-                  placeholder="9647700000000"
+                  placeholder="9647725631342"
                   className="flex-1 px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-slate-900 font-mono text-xs focus:outline-none focus:border-emerald-500"
                 />
                 <button
