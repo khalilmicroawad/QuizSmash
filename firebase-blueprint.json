@@ -1,0 +1,177 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information for students and educators",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Unique identifier from Firebase Authentication",
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "description": "Student email address",
+          "maxLength": 256
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name of the user",
+          "maxLength": 100
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "Profile picture URL",
+          "maxLength": 1024
+        },
+        "role": {
+          "type": "string",
+          "description": "Access role within the application",
+          "enum": ["student", "admin"]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of account creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last profile update"
+        }
+      },
+      "required": ["uid", "email"]
+    },
+    "UserAccess": {
+      "title": "UserAccess",
+      "description": "Subscription status and trial tracking for Course 1 questions",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase user ID",
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address",
+          "maxLength": 256
+        },
+        "isUnlocked": {
+          "type": "boolean",
+          "description": "Whether questions are currently unlocked"
+        },
+        "hasSubscription": {
+          "type": "boolean",
+          "description": "Whether 100-login subscription is active"
+        },
+        "trialExpiresAt": {
+          "type": "number",
+          "description": "Epoch timestamp in milliseconds when 7-day trial expires"
+        },
+        "usedLogins": {
+          "type": "number",
+          "description": "Number of daily logins consumed"
+        },
+        "maxLogins": {
+          "type": "number",
+          "description": "Maximum allowed logins for subscription (100)"
+        },
+        "allowedCourse": {
+          "type": "string",
+          "description": "Course identifier allowed for access",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last access check"
+        }
+      },
+      "required": ["uid", "isUnlocked", "usedLogins"]
+    },
+    "SiteVisit": {
+      "title": "SiteVisit",
+      "description": "Guest visitor record for digital animated counter",
+      "type": "object",
+      "properties": {
+        "visitorId": {
+          "type": "string",
+          "description": "Client generated visitor ID",
+          "maxLength": 128
+        },
+        "visitorNumber": {
+          "type": "number",
+          "description": "Sequential guest counter number"
+        },
+        "visitedAt": {
+          "type": "string",
+          "description": "ISO timestamp of the visit"
+        },
+        "userAgent": {
+          "type": "string",
+          "description": "Browser user agent string",
+          "maxLength": 512
+        }
+      },
+      "required": ["visitorId", "visitorNumber", "visitedAt"]
+    },
+    "FileMetadata": {
+      "title": "FileMetadata",
+      "description": "Metadata for uploaded study files, summaries, and lecture notes",
+      "type": "object",
+      "properties": {
+        "fileId": {
+          "type": "string",
+          "description": "Unique file identifier",
+          "maxLength": 128
+        },
+        "fileName": {
+          "type": "string",
+          "description": "Original name of the file",
+          "maxLength": 256
+        },
+        "fileSize": {
+          "type": "number",
+          "description": "Size of the file in bytes"
+        },
+        "fileUrl": {
+          "type": "string",
+          "description": "Download URL in Firebase Storage",
+          "maxLength": 2048
+        },
+        "subjectId": {
+          "type": "string",
+          "description": "Dental subject ID related to this file",
+          "maxLength": 64
+        },
+        "uploaderUid": {
+          "type": "string",
+          "description": "UID of the user who uploaded the file",
+          "maxLength": 128
+        },
+        "uploadedAt": {
+          "type": "string",
+          "description": "ISO timestamp of file upload"
+        }
+      },
+      "required": ["fileId", "fileName", "fileUrl", "uploaderUid"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Stores user profile and account details"
+    },
+    "/access/{userId}": {
+      "schema": "UserAccess",
+      "description": "Stores 7-day trial and 100-login subscription status per user"
+    },
+    "/site_visits/{visitId}": {
+      "schema": "SiteVisit",
+      "description": "Stores site visitor logs for the animated guest counter"
+    },
+    "/files/{fileId}": {
+      "schema": "FileMetadata",
+      "description": "Stores metadata of uploaded files and resources in Firebase Storage"
+    }
+  }
+}

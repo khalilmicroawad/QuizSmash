@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import type { User } from '@supabase/supabase-js';
 import { supabase } from '../supabaseClient.js';
+import { onFirebaseAuthState, firebaseSignOutUser, syncFirebaseUserAccess } from '../services/firebase';
 import {
   COURSE_1_ACCESS_CODES_100,
   normalizeAccessCode,
@@ -9,6 +9,18 @@ import {
 } from '../data/course1Codes';
 import { CourseCodeService } from '../services/courseCodeService';
 import { UserAccessTrackerService, UserAccessRecord } from '../services/userAccessTrackerService';
+
+export interface AuthUser {
+  id: string;
+  email?: string;
+  user_metadata?: {
+    full_name?: string;
+    first_name?: string;
+    last_name?: string;
+    [key: string]: any;
+  };
+  provider?: 'supabase' | 'firebase';
+}
 
 export interface AccessState {
   isUnlocked: boolean;
@@ -25,7 +37,7 @@ export interface AccessState {
 }
 
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
   isUnlocked: boolean;
   isPermanent: boolean;
   hasSubscription: boolean;
@@ -125,7 +137,7 @@ const getTodayDateString = (): string => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [dailyLoginExpiredNotice, setDailyLoginExpiredNotice] = useState<boolean>(false);
   const [accessRecord, setAccessRecord] = useState<UserAccessRecord | null>(null);
@@ -232,104 +244,120 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return currentAccess;
   };
 
-  // Initialize Supabase Auth Session and enforce daily login
+  // Initialize Auth Sessions (Supabase & Firebase) and enforce daily login
   useEffect(() => {
     let isMounted = true;
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!isMounted) return;
-      if (session?.user) {
-        const today = getTodayDateString();
-        const userAccess = loadUserAccess(session.user.id);
-        const sessionKey = `quiz_smash_session_day_${session.user.id}`;
-        const storedSessionDay = sessionStorage.getItem(sessionKey);
+    // Helper to process authenticated user
+    const processAuthenticatedUser = (authUser: AuthUser) => {
+      const today = getTodayDateString();
+      const userAccess = loadUserAccess(authUser.id);
+      const sessionKey = `quiz_smash_session_day_${authUser.id}`;
+      const storedSessionDay = sessionStorage.getItem(sessionKey);
 
-        // REQUIREMENT: Everyday the site will force the user to login again!
-        // If user logged in on a previous day and hasn't logged in today, force logout!
-        if (userAccess.lastLoginDateString && userAccess.lastLoginDateString !== today && storedSessionDay !== today) {
-          try {
-            await supabase.auth.signOut();
-          } catch {
-            // Ignore
-          }
-          if (!isMounted) return;
-          setUser(null);
-          setDailyLoginExpiredNotice(true);
-          if (window.location.pathname !== '/login') {
-            window.history.replaceState({}, '', '/login');
-          }
-          setIsLoading(false);
-          return;
-        }
-
-        // Active valid session for today: record login usage and update state
-        const updated = recordDailyLoginUsage(userAccess, session.user.id);
-        setUser(session.user);
-        setAccess(updated);
-        UserAccessTrackerService.recordAccess(session.user.id, session.user.email || undefined).then((rec) => {
-          if (isMounted) setAccessRecord(rec);
-        });
-
-        if (window.location.pathname === '/login') {
-          window.history.replaceState({}, '', '/');
-        }
-      } else {
+      // Daily forced login check
+      if (userAccess.lastLoginDateString && userAccess.lastLoginDateString !== today && storedSessionDay !== today) {
+        Promise.allSettled([supabase.auth.signOut(), firebaseSignOutUser()]).catch(() => {});
+        if (!isMounted) return;
         setUser(null);
-        setAccessRecord(null);
-        if (window.location.pathname !== '/login') {
-          window.history.replaceState({}, '', '/login');
-        }
-      }
-      setIsLoading(false);
-    }).catch(() => {
-      if (isMounted) {
-        setUser(null);
-        setAccessRecord(null);
+        setDailyLoginExpiredNotice(true);
         if (window.location.pathname !== '/login') {
           window.history.replaceState({}, '', '/login');
         }
         setIsLoading(false);
+        return;
+      }
+
+      const updated = recordDailyLoginUsage(userAccess, authUser.id);
+      setUser(authUser);
+      setAccess(updated);
+      setDailyLoginExpiredNotice(false);
+      UserAccessTrackerService.recordAccess(authUser.id, authUser.email || undefined).then((rec) => {
+        if (isMounted) setAccessRecord(rec);
+      });
+
+      if (window.location.pathname === '/login') {
+        window.history.replaceState({}, '', '/');
+      }
+      setIsLoading(false);
+    };
+
+    // 1. Supabase initial session check
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!isMounted) return;
+      if (session?.user) {
+        const authUser: AuthUser = {
+          id: session.user.id,
+          email: session.user.email,
+          user_metadata: session.user.user_metadata,
+          provider: 'supabase',
+        };
+        processAuthenticatedUser(authUser);
+      }
+    }).catch(() => {
+      // Supabase failed or offline
+    });
+
+    // 2. Supabase auth change listener
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
+      if (session?.user) {
+        const authUser: AuthUser = {
+          id: session.user.id,
+          email: session.user.email,
+          user_metadata: session.user.user_metadata,
+          provider: 'supabase',
+        };
+        processAuthenticatedUser(authUser);
       }
     });
 
-    // Listen for auth state changes
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    // 3. Firebase Auth change listener
+    const unsubscribeFirebase = onFirebaseAuthState((fbUser) => {
       if (!isMounted) return;
-      if (session?.user) {
-        const userAccess = loadUserAccess(session.user.id);
-        const updated = recordDailyLoginUsage(userAccess, session.user.id);
-        setUser(session.user);
-        setAccess(updated);
-        setDailyLoginExpiredNotice(false);
-        UserAccessTrackerService.recordAccess(session.user.id, session.user.email || undefined).then((rec) => {
-          if (isMounted) setAccessRecord(rec);
-        });
-
-        if (window.location.pathname === '/login') {
-          window.history.replaceState({}, '', '/');
-        }
+      if (fbUser) {
+        const authUser: AuthUser = {
+          id: fbUser.uid,
+          email: fbUser.email || undefined,
+          user_metadata: {
+            full_name: fbUser.displayName || undefined,
+          },
+          provider: 'firebase',
+        };
+        syncFirebaseUserAccess(fbUser).catch(() => {});
+        processAuthenticatedUser(authUser);
       } else {
-        setUser(null);
-        setAccessRecord(null);
-        setAccess({
-          isUnlocked: false,
-          isPermanent: false,
-          hasSubscription: false,
-          firstActivatedAt: null,
-          trialExpiresAt: null,
-          maxLogins: MAX_SUBSCRIPTION_LOGINS,
-          usedLogins: 0,
+        // If neither user is logged in
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (!isMounted) return;
+          if (!session?.user) {
+            setUser(null);
+            setAccessRecord(null);
+            setAccess({
+              isUnlocked: false,
+              isPermanent: false,
+              hasSubscription: false,
+              firstActivatedAt: null,
+              trialExpiresAt: null,
+              maxLogins: MAX_SUBSCRIPTION_LOGINS,
+              usedLogins: 0,
+            });
+            if (window.location.pathname !== '/login') {
+              window.history.replaceState({}, '', '/login');
+            }
+            setIsLoading(false);
+          }
+        }).catch(() => {
+          if (!isMounted) return;
+          setIsLoading(false);
         });
-        if (window.location.pathname !== '/login') {
-          window.history.replaceState({}, '', '/login');
-        }
       }
-      setIsLoading(false);
     });
 
     return () => {
       isMounted = false;
       authListener?.subscription?.unsubscribe();
+      unsubscribeFirebase();
     };
   }, []);
 
@@ -601,7 +629,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (user?.id) {
         sessionStorage.removeItem(`quiz_smash_session_day_${user.id}`);
       }
-      await supabase.auth.signOut();
+      await Promise.allSettled([
+        supabase.auth.signOut(),
+        firebaseSignOutUser(),
+      ]);
     } catch {
       // Ignore
     }

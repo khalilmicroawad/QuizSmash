@@ -3,282 +3,277 @@ import {
   getAuth,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
   User as FirebaseUser,
+  updateProfile,
 } from 'firebase/auth';
 import {
   getFirestore,
   doc,
   getDoc,
+  getDocFromServer,
   setDoc,
   updateDoc,
+  collection,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  limit,
 } from 'firebase/firestore';
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+  listAll,
+} from 'firebase/storage';
+import firebaseConfig from '../../firebase-applet-config.json';
 
-// ============================================================================
-// ⚙️ FIREBASE CONFIGURATION CREDENTIALS PLACEHOLDER
-// Paste your Firebase web app configuration below from the Firebase Console:
-// (Firebase Console -> Project Settings -> General -> Your apps -> Web app)
-// ============================================================================
-export const firebaseConfig = {
-  apiKey: "YOUR_API_KEY_HERE",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
-};
+// Initialize Firebase App
+export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
-// Check if actual configuration has been provided
-export const isFirebaseConfigured = (): boolean => {
-  return (
-    firebaseConfig.apiKey !== "YOUR_API_KEY_HERE" &&
-    firebaseConfig.apiKey.length > 10 &&
-    firebaseConfig.projectId !== "YOUR_PROJECT_ID"
-  );
-};
+// CRITICAL: Initialize Firestore with the provisioned firestoreDatabaseId
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 
-// Initialize Firebase safely
-let app: any = null;
-let auth: any = null;
-let db: any = null;
+// Initialize Firebase Auth
+export const auth = getAuth(app);
 
-if (isFirebaseConfigured()) {
+// Initialize Firebase Storage for files
+export const storage = getStorage(app);
+
+// Connection test as required by Firebase integration guidelines
+async function testFirestoreConnection() {
   try {
-    app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    db = getFirestore(app);
+    await getDocFromServer(doc(db, 'test', 'connection'));
   } catch (error) {
-    console.warn('Firebase initialization error, running in demo/offline mode:', error);
+    if (error instanceof Error && error.message.includes('the client is offline')) {
+      console.warn('Firebase client appears offline, verify network connection.');
+    }
   }
 }
+testFirestoreConnection();
 
-export interface UserTrialRecord {
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+  };
+}
+
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+    },
+    operationType,
+    path,
+  };
+  console.warn('Firestore Operation Notice: ', JSON.stringify(errInfo));
+  return errInfo;
+}
+
+// User Trial & Access Record Interface
+export interface FirebaseUserAccess {
   uid: string;
   email: string;
-  displayName: string;
-  photoURL?: string;
-  firstLoginAt: number;
-  trialExpiresAt: number;
-  isSubscribed: boolean;
-  subscribedAt?: number;
-  plan?: string;
+  displayName?: string;
+  isUnlocked: boolean;
+  hasSubscription: boolean;
+  trialExpiresAt: number | null;
+  usedLogins: number;
+  maxLogins: number;
+  allowedCourse?: string;
+  updatedAt: string;
 }
 
-const LOCAL_STORAGE_KEY_USER = 'quiz_smash_auth_user';
-const LOCAL_STORAGE_KEY_TRIAL = 'quiz_smash_trial_record';
-
-export const DURATION_24_HOURS_MS = 24 * 60 * 60 * 1000;
-
-// Local persistent fallback for trial data
-const getLocalTrialRecord = (uid: string): UserTrialRecord | null => {
-  try {
-    const raw = localStorage.getItem(`${LOCAL_STORAGE_KEY_TRIAL}_${uid}`);
-    if (raw) return JSON.parse(raw);
-  } catch {
-    // Ignore storage parse error
-  }
-  return null;
-};
-
-const saveLocalTrialRecord = (record: UserTrialRecord) => {
-  try {
-    localStorage.setItem(`${LOCAL_STORAGE_KEY_TRIAL}_${record.uid}`, JSON.stringify(record));
-  } catch {
-    // Ignore storage write error
-  }
-};
+/**
+ * 1. GOOGLE SIGN IN (POPUP)
+ */
+export async function loginWithGooglePopup(): Promise<FirebaseUser> {
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+  const result = await signInWithPopup(auth, provider);
+  return result.user;
+}
 
 /**
- * Sync or create user trial record in Firestore / LocalStorage
+ * 2. EMAIL & PASSWORD SIGN IN
  */
-export async function syncUserTrial(
-  uid: string,
+export async function loginWithEmail(email: string, pass: string): Promise<FirebaseUser> {
+  const result = await signInWithEmailAndPassword(auth, email.trim(), pass);
+  return result.user;
+}
+
+/**
+ * 3. EMAIL & PASSWORD REGISTER
+ */
+export async function registerWithEmail(
   email: string,
-  displayName: string,
-  photoURL?: string
-): Promise<UserTrialRecord> {
-  const now = Date.now();
-
-  // Try fetching from Firestore if configured
-  if (db) {
+  pass: string,
+  fullName?: string
+): Promise<FirebaseUser> {
+  const result = await createUserWithEmailAndPassword(auth, email.trim(), pass);
+  if (fullName && result.user) {
     try {
-      const userDocRef = doc(db, 'users', uid);
-      const snapshot = await getDoc(userDocRef);
-
-      if (snapshot.exists()) {
-        const data = snapshot.data() as UserTrialRecord;
-        saveLocalTrialRecord(data);
-        return data;
-      } else {
-        // First login: create 24-hour trial
-        const newRecord: UserTrialRecord = {
-          uid,
-          email,
-          displayName: displayName || email.split('@')[0],
-          photoURL: photoURL || '',
-          firstLoginAt: now,
-          trialExpiresAt: now + DURATION_24_HOURS_MS,
-          isSubscribed: false,
-        };
-
-        await setDoc(userDocRef, newRecord);
-        saveLocalTrialRecord(newRecord);
-        return newRecord;
-      }
-    } catch (err) {
-      console.warn('Firestore read/write failed, falling back to local persistence:', err);
+      await updateProfile(result.user, { displayName: fullName });
+    } catch {
+      // Ignore
     }
   }
-
-  // Local fallback
-  const local = getLocalTrialRecord(uid);
-  if (local) {
-    return local;
-  }
-
-  const initialRecord: UserTrialRecord = {
-    uid,
-    email,
-    displayName: displayName || email.split('@')[0],
-    photoURL: photoURL || '',
-    firstLoginAt: now,
-    trialExpiresAt: now + DURATION_24_HOURS_MS,
-    isSubscribed: false,
-  };
-  saveLocalTrialRecord(initialRecord);
-  return initialRecord;
+  return result.user;
 }
 
 /**
- * Mark user as subscribed in Firestore / Local
+ * 4. SIGN OUT
  */
-export async function subscribeUser(uid: string, plan = 'Pro Annual'): Promise<UserTrialRecord> {
-  const now = Date.now();
-  if (db) {
-    try {
-      const userDocRef = doc(db, 'users', uid);
-      await updateDoc(userDocRef, {
-        isSubscribed: true,
-        subscribedAt: now,
-        plan,
-      });
-    } catch (err) {
-      console.warn('Firestore subscription update failed, falling back to local:', err);
-    }
-  }
-
-  const local = getLocalTrialRecord(uid) || {
-    uid,
-    email: '',
-    displayName: 'User',
-    firstLoginAt: now,
-    trialExpiresAt: now,
-    isSubscribed: false,
-  };
-
-  local.isSubscribed = true;
-  local.subscribedAt = now;
-  local.plan = plan;
-  saveLocalTrialRecord(local);
-  return local;
+export async function firebaseSignOutUser(): Promise<void> {
+  await firebaseSignOut(auth);
 }
 
 /**
- * Sign in with Google (Gmail only)
+ * 5. AUTH STATE LISTENER
  */
-export async function loginWithGoogle(): Promise<{
-  user: { uid: string; email: string; displayName: string; photoURL?: string };
-  trial: UserTrialRecord;
-}> {
-  if (auth && isFirebaseConfigured()) {
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
-    const result = await signInWithPopup(auth, provider);
-    const fbUser = result.user;
-    const user = {
-      uid: fbUser.uid,
-      email: fbUser.email || '',
-      displayName: fbUser.displayName || fbUser.email?.split('@')[0] || 'Quiz Master',
-      photoURL: fbUser.photoURL || undefined,
+export function onFirebaseAuthState(callback: (user: FirebaseUser | null) => void) {
+  return onAuthStateChanged(auth, callback);
+}
+
+/**
+ * 6. FIRESTORE SYNC: Load or initialize user access document
+ */
+export async function syncFirebaseUserAccess(
+  user: FirebaseUser,
+  initialTrialMs = 7 * 24 * 60 * 60 * 1000
+): Promise<FirebaseUserAccess> {
+  const userAccessRef = doc(db, 'access', user.uid);
+  const userProfileRef = doc(db, 'users', user.uid);
+  const now = Date.now();
+
+  try {
+    const accessSnap = await getDoc(userAccessRef);
+
+    // Save profile metadata
+    await setDoc(
+      userProfileRef,
+      {
+        uid: user.uid,
+        email: user.email || '',
+        displayName: user.displayName || user.email?.split('@')[0] || 'Dental Student',
+        photoURL: user.photoURL || '',
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true }
+    );
+
+    if (accessSnap.exists()) {
+      return accessSnap.data() as FirebaseUserAccess;
+    } else {
+      // New user registration: automatically grant 7-day trial!
+      const initialAccess: FirebaseUserAccess = {
+        uid: user.uid,
+        email: user.email || '',
+        displayName: user.displayName || '',
+        isUnlocked: true,
+        hasSubscription: false,
+        trialExpiresAt: now + initialTrialMs,
+        usedLogins: 0,
+        maxLogins: 100,
+        allowedCourse: 'stage-1',
+        updatedAt: new Date().toISOString(),
+      };
+
+      await setDoc(userAccessRef, initialAccess);
+      return initialAccess;
+    }
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `access/${user.uid}`);
+    // Return fallback in-memory state
+    return {
+      uid: user.uid,
+      email: user.email || '',
+      isUnlocked: true,
+      hasSubscription: false,
+      trialExpiresAt: now + initialTrialMs,
+      usedLogins: 0,
+      maxLogins: 100,
+      allowedCourse: 'stage-1',
+      updatedAt: new Date().toISOString(),
     };
-
-    const trial = await syncUserTrial(user.uid, user.email, user.displayName, user.photoURL);
-    return { user, trial };
   }
-
-  // Graceful Demo / Simulator login for immediate testing before pasting credentials
-  const demoEmail = 'user@gmail.com';
-  const demoUid = 'demo_google_user_001';
-  const demoUser = {
-    uid: demoUid,
-    email: demoEmail,
-    displayName: 'Quiz Master',
-    photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-  };
-
-  const trial = await syncUserTrial(demoUser.uid, demoUser.email, demoUser.displayName, demoUser.photoURL);
-  localStorage.setItem(LOCAL_STORAGE_KEY_USER, JSON.stringify(demoUser));
-  return { user: demoUser, trial };
 }
 
 /**
- * Sign out
+ * 7. FILE STORAGE: Upload study document or image to Firebase Storage
  */
-export async function logout(): Promise<void> {
-  if (auth && isFirebaseConfigured()) {
-    try {
-      await firebaseSignOut(auth);
-    } catch (err) {
-      console.warn('Firebase sign out error:', err);
-    }
+export async function uploadFileToFirebaseStorage(
+  file: File,
+  folder = 'study_materials'
+): Promise<{ fileId: string; fileName: string; fileSize: number; fileUrl: string; uploaderUid: string }> {
+  if (!auth.currentUser) {
+    throw new Error('User must be logged in to upload files to Firebase Storage.');
   }
-  localStorage.removeItem(LOCAL_STORAGE_KEY_USER);
+
+  const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const fileId = `file_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const storagePath = `${folder}/${auth.currentUser.uid}/${fileId}_${safeFileName}`;
+  const fileRef = ref(storage, storagePath);
+
+  // Upload to Firebase Storage
+  const snapshot = await uploadBytes(fileRef, file);
+  const fileUrl = await getDownloadURL(snapshot.ref);
+
+  const fileData = {
+    fileId,
+    fileName: file.name,
+    fileSize: file.size,
+    fileUrl,
+    uploaderUid: auth.currentUser.uid,
+    uploadedAt: new Date().toISOString(),
+  };
+
+  // Record metadata in Firestore files collection
+  try {
+    await setDoc(doc(db, 'files', fileId), fileData);
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `files/${fileId}`);
+  }
+
+  return fileData;
 }
 
 /**
- * Subscribe to Auth State
+ * 8. FILE STORAGE: Delete file
  */
-export function onAuthChanged(callback: (user: FirebaseUser | null) => void) {
-  if (auth && isFirebaseConfigured()) {
-    return onAuthStateChanged(auth, callback);
+export async function deleteFileFromFirebaseStorage(fileId: string, storagePath: string): Promise<void> {
+  try {
+    const fileRef = ref(storage, storagePath);
+    await deleteObject(fileRef);
+    await setDoc(doc(db, 'files', fileId), { deleted: true, deletedAt: new Date().toISOString() }, { merge: true });
+  } catch (err) {
+    console.warn('Error deleting file from storage:', err);
   }
-  return () => {};
-}
-
-/**
- * Test Simulator Helpers (Quickly test 24h expiration and reset in UI)
- */
-export function simulateExpireTrial(uid: string): UserTrialRecord {
-  const local = getLocalTrialRecord(uid) || {
-    uid,
-    email: 'user@gmail.com',
-    displayName: 'Quiz Master',
-    firstLoginAt: Date.now() - DURATION_24_HOURS_MS - 1000,
-    trialExpiresAt: Date.now() - 1000,
-    isSubscribed: false,
-  };
-
-  local.trialExpiresAt = Date.now() - 1000; // Expired 1s ago
-  local.isSubscribed = false;
-  saveLocalTrialRecord(local);
-  return local;
-}
-
-export function simulateResetTrial(uid: string): UserTrialRecord {
-  const now = Date.now();
-  const local = getLocalTrialRecord(uid) || {
-    uid,
-    email: 'user@gmail.com',
-    displayName: 'Quiz Master',
-    firstLoginAt: now,
-    trialExpiresAt: now + DURATION_24_HOURS_MS,
-    isSubscribed: false,
-  };
-
-  local.firstLoginAt = now;
-  local.trialExpiresAt = now + DURATION_24_HOURS_MS;
-  local.isSubscribed = false;
-  saveLocalTrialRecord(local);
-  return local;
 }
