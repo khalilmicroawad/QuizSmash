@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { User, Play, Zap, Globe, LogOut, GraduationCap, Shield, Timer, BookOpen, FolderOpen } from 'lucide-react';
+import { User, Play, Zap, Globe, LogOut, GraduationCap, Shield, Timer, BookOpen } from 'lucide-react';
 import { UserProfile } from '../types/quiz';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { AdminCodesPortal, ADMIN_EMAIL } from './AdminCodesPortal';
-import { FirebaseFileManagerModal } from './FirebaseFileManagerModal';
 
 interface HeaderProps {
   currentTab: 'subjects' | 'play' | 'profile' | 'bank';
@@ -23,7 +22,6 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const { language, toggleLanguage, t, isRTL } = useLanguage();
   const [isAdminOpen, setIsAdminOpen] = useState(false);
-  const [isFileManagerOpen, setIsFileManagerOpen] = useState(false);
   const {
     user,
     isUnlocked,
@@ -123,17 +121,6 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Firebase File Storage Button - Icon Only */}
-          <button
-            type="button"
-            onClick={() => setIsFileManagerOpen(true)}
-            title={isRTL ? 'مستودع ملفات ومصادر فايربيس' : 'Firebase Cloud File Storage'}
-            aria-label={isRTL ? 'مستودع ملفات ومصادر فايربيس' : 'Firebase Cloud File Storage'}
-            className="flex h-9 w-9 items-center justify-center rounded-xl btn-glossy-emerald text-white cursor-pointer shadow-xs transition-transform active:scale-95"
-          >
-            <FolderOpen className="h-4 w-4 text-white" />
-          </button>
-
           {/* Language Switcher - Icon Only */}
           <button
             type="button"
@@ -209,12 +196,6 @@ export const Header: React.FC<HeaderProps> = ({
       <AdminCodesPortal
         isOpen={isAdminOpen}
         onClose={() => setIsAdminOpen(false)}
-      />
-
-      {/* Firebase File Storage Modal */}
-      <FirebaseFileManagerModal
-        isOpen={isFileManagerOpen}
-        onClose={() => setIsFileManagerOpen(false)}
       />
     </header>
   );
