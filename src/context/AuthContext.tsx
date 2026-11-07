@@ -51,7 +51,8 @@ interface AuthContextType {
     code: string,
     targetCourseId?: string
   ) => Promise<{ success: boolean; type: 'trial' | 'subscription' | 'invalid'; message: string }>;
-  activate2DayTrial: (code?: string, targetCourseId?: string) => void;
+  activate7DayTrial: (code?: string, targetCourseId?: string) => void;
+  activate2DayTrial: (code?: string, targetCourseId?: string) => void; // Backward compatibility alias
   activate24HourTrial: (code?: string, targetCourseId?: string) => void; // Backward compatibility alias
   unlockSubscription100: (code?: string, targetCourseId?: string) => void;
   unlockPermanent: (code?: string, targetCourseId?: string) => void; // Backward compatibility alias
@@ -68,22 +69,28 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const LOCAL_ACCESS_PREFIX = 'quiz_smash_user_access_v6_';
 const LOCAL_WHATSAPP_KEY = 'quiz_smash_owner_whatsapp_v6';
 
-// Default owner WhatsApp number (Dr. Khalil Awad: +9647725631342)
 export const DEFAULT_WHATSAPP_NUMBER = '9647725631342';
 export const PRICE_IQD = '20,000 IQD';
 export const MAX_SUBSCRIPTION_LOGINS = 100;
 
-// 2 Days = 48 Hours
-export const DURATION_48_HOURS_MS = 2 * 24 * 60 * 60 * 1000;
+// 7 Days = 168 Hours (1 Full Week)
+export const DURATION_7_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+export const DURATION_48_HOURS_MS = DURATION_7_DAYS_MS; // Backward compatibility
 
 // Accepted codes list
 const TRIAL_CODES = [
   'TRIAL',
-  'TRIAL48',
+  'TRIAL7',
+  '7DAY',
+  '7DAYS',
+  'WEEK',
+  '1WEEK',
   'FREE',
-  'FREE48',
+  'FREE7',
   'START',
-  'TEST48',
+  'TEST7',
+  'TRIAL48',
+  'FREE48',
   '2DAY',
   '2DAYS',
   '48H',
@@ -487,7 +494,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     }
 
-    // 3. Check 2-Day (48-Hour) Free Trial Codes
+    // 3. Check 7-Day Free Trial Codes
     if (TRIAL_CODES.includes(code) || code.startsWith('TRIAL-') || code.startsWith('FREE-')) {
       const newState: AccessState = {
         isUnlocked: true,
@@ -495,7 +502,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         hasSubscription: false,
         allowedCourse: 'stage-1',
         firstActivatedAt: access.firstActivatedAt || now,
-        trialExpiresAt: now + DURATION_48_HOURS_MS,
+        trialExpiresAt: now + DURATION_7_DAYS_MS,
         lastCodeUsed: code,
         maxLogins: MAX_SUBSCRIPTION_LOGINS,
         usedLogins: access.hasSubscription ? access.usedLogins : 0,
@@ -511,7 +518,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return {
         success: true,
         type: 'trial' as const,
-        message: 'تم تفعيل التجربة المجانية لمدة يومين (48 ساعة) بنجاح للمرحلة الأولى دون استهلاك رصيد الاشتراك!',
+        message: 'تم تفعيل التجربة المجانية لمدة 7 أيام (أسبوع كامل) بنجاح للمرحلة الأولى دون استهلاك رصيد الاشتراك!',
       };
     }
 
@@ -522,7 +529,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   };
 
-  const activate2DayTrial = (code = 'FREE_TRIAL_2DAYS', targetCourseId = 'stage-1') => {
+  const activate7DayTrial = (code = 'FREE_TRIAL_7DAYS', targetCourseId = 'stage-1') => {
     const now = Date.now();
     const today = getTodayDateString();
     const newState: AccessState = {
@@ -531,7 +538,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       hasSubscription: false,
       allowedCourse: targetCourseId,
       firstActivatedAt: now,
-      trialExpiresAt: now + DURATION_48_HOURS_MS,
+      trialExpiresAt: now + DURATION_7_DAYS_MS,
       lastCodeUsed: code,
       maxLogins: MAX_SUBSCRIPTION_LOGINS,
       usedLogins: access.hasSubscription ? access.usedLogins : 0,
@@ -544,9 +551,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     saveAccess(newState);
   };
 
+  const activate2DayTrial = (code = 'FREE_TRIAL_7DAYS', targetCourseId = 'stage-1') => {
+    activate7DayTrial(code, targetCourseId);
+  };
+
   // Backward compatibility alias
   const activate24HourTrial = (code?: string, targetCourseId?: string) => {
-    activate2DayTrial(code, targetCourseId);
+    activate7DayTrial(code, targetCourseId);
   };
 
   const unlockSubscription100 = (code = 'SUB_100_LOGINS', targetCourseId = 'stage-1') => {
@@ -615,7 +626,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const testResetTrial = () => {
-    activate2DayTrial('TEST_RESET');
+    activate7DayTrial('TEST_RESET');
   };
 
   // Test helper: simulate that yesterday's date was last login, triggering tomorrow's forced login check
@@ -666,6 +677,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ownerWhatsApp,
         isLoading,
         submitAccessCode,
+        activate7DayTrial,
         activate2DayTrial,
         activate24HourTrial,
         unlockSubscription100,

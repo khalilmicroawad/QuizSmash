@@ -28,6 +28,7 @@ export const AccessCodeGate: React.FC<AccessCodeGateProps> = ({
   const {
     user,
     submitAccessCode,
+    activate7DayTrial,
     activate2DayTrial,
     ownerWhatsApp,
     setOwnerWhatsApp,
@@ -85,7 +86,7 @@ export const AccessCodeGate: React.FC<AccessCodeGateProps> = ({
   };
 
   const handleStartTrial = () => {
-    activate2DayTrial('FREE_TRIAL_2DAYS', courseId);
+    activate7DayTrial('FREE_TRIAL_7DAYS', courseId);
   };
 
   const handleSavePhone = (e: React.FormEvent) => {
@@ -141,8 +142,8 @@ export const AccessCodeGate: React.FC<AccessCodeGateProps> = ({
 
           <p className="mt-1.5 text-xs text-[#556B2F] max-w-xs mx-auto leading-relaxed">
             {isRTL
-              ? 'أدخل كود الاشتراك (13 رقماً) المخصص للمرحلة الأولى للحصول على 100 تسجيل دخول، أو ابدأ التجربة المجانية.'
-              : 'Enter your 13-figure Course 1 activation code (100 logins) or start your 2-day free trial.'}
+              ? 'أدخل كود الاشتراك (13 رقماً) المخصص للمرحلة الأولى للحصول على 100 تسجيل دخول، أو ابدأ التجربة المجانية لمدة 7 أيام.'
+              : 'Enter your 13-figure Course 1 activation code (100 logins) or start your 7-day free trial.'}
           </p>
         </div>
 
@@ -171,34 +172,34 @@ export const AccessCodeGate: React.FC<AccessCodeGateProps> = ({
         {/* LINE SEPARATING HEADER FROM TRIAL SECTION */}
         <div className="w-full border-b border-[#D9E2CE] my-4" />
 
-        {/* SECTION 2: 2-DAY FREE TRIAL (48 HOURS) - CLEAR & PROMINENT */}
+        {/* SECTION 2: 7-DAY FREE TRIAL (1 FULL WEEK) - CLEAR & PROMINENT */}
         <div className="rounded-2xl border-2 border-emerald-500/40 bg-gradient-to-br from-emerald-50/80 via-[#F2F5ED] to-white p-4 shadow-sm text-center">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-600 text-white text-[11px] font-black uppercase tracking-wider mb-2 shadow-xs">
             <Timer className="w-3.5 h-3.5" />
-            <span>{isRTL ? 'تجربة مجانية شاملة (يومان / 48 ساعة)' : '2-Day Full Free Trial (48 Hours)'}</span>
+            <span>{isRTL ? 'تجربة مجانية شاملة (7 أيام / أسبوع كامل)' : '7-Day Full Free Trial (1 Full Week)'}</span>
           </div>
 
           <h3 className="text-sm font-black text-slate-900 mb-1">
-            {isRTL ? 'جرّب جميع بنوك الأسئلة مجاناً لمدة 48 ساعة' : 'Practice All Question Banks Free for 48 Hours'}
+            {isRTL ? 'جرّب جميع بنوك الأسئلة مجاناً لمدة 7 أيام' : 'Practice All Question Banks Free for 7 Days'}
           </h3>
 
           <p className="text-[11px] text-[#4D5D28] leading-relaxed mb-3">
             {isRTL
-              ? 'وصول فوري وشامل لجميع مواد المرحلة الأولى بدون كود وبدون شروط لمدة يومين كاملين.'
-              : 'Instant full access to all Course 1 subjects & question banks without code for 48 hours.'}
+              ? 'وصول فوري وشامل لجميع مواد المرحلة الأولى بدون كود وبدون شروط لمدة 7 أيام كاملة (أسبوع كامل).'
+              : 'Instant full access to all Course 1 subjects & question banks without code for 7 full days.'}
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] text-emerald-800 font-semibold mb-3">
             <span className="inline-flex items-center gap-1">✓ {isRTL ? 'وصول لكافة المواد' : 'All Subjects Unlocked'}</span>
             <span className="inline-flex items-center gap-1">✓ {isRTL ? 'لا تستهلك رصيد الـ 100 دخول' : 'Keeps 100-login credits intact'}</span>
-            <span className="inline-flex items-center gap-1">✓ {isRTL ? '48 ساعة كاملة' : 'Full 48 Hours'}</span>
+            <span className="inline-flex items-center gap-1">✓ {isRTL ? 'أسبوع كامل (7 أيام)' : 'Full 7 Days'}</span>
           </div>
 
           <button
             type="button"
             onClick={handleStartTrial}
-            title={isRTL ? 'بدء التجربة المجانية لمدة يومين (48 ساعة)' : 'Start 2-Day Free Trial (48 Hours)'}
-            aria-label={isRTL ? 'بدء التجربة المجانية لمدة يومين (48 ساعة)' : 'Start 2-Day Free Trial (48 Hours)'}
+            title={isRTL ? 'بدء التجربة المجانية لمدة 7 أيام (أسبوع كامل)' : 'Start 7-Day Free Trial (1 Full Week)'}
+            aria-label={isRTL ? 'بدء التجربة المجانية لمدة 7 أيام (أسبوع كامل)' : 'Start 7-Day Free Trial (1 Full Week)'}
             className="w-full py-3 px-4 rounded-xl btn-glossy-emerald text-white flex items-center justify-center cursor-pointer shadow-md transition-transform active:scale-[0.99]"
           >
             <Timer className="w-5 h-5" />

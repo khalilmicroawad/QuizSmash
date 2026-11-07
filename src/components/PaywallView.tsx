@@ -134,8 +134,8 @@ export const PaywallView: React.FC<PaywallViewProps> = ({
                 ? 'تم استهلاك رصيد تسجيل الدخول'
                 : '100 Logins Limit Reached'
               : isRTL
-              ? 'انتهت الفترة التجريبية المجانية (يومان / 48 ساعة)'
-              : '2-Day Free Trial (48 Hours) Expired'}
+              ? 'انتهت الفترة التجريبية المجانية (7 أيام / أسبوع كامل)'
+              : '7-Day Free Trial (1 Full Week) Expired'}
           </h2>
           <p className="mt-1.5 text-xs text-[#556B2F] max-w-xs mx-auto leading-relaxed">
             {isLoginsDepleted
@@ -143,8 +143,8 @@ export const PaywallView: React.FC<PaywallViewProps> = ({
                 ? `لقد استخدمت جميع مرات تسجيل الدخول المتاحة (${maxLogins} مرة). يرجى تجديد الاشتراك بـ ${PRICE_IQD}.`
                 : `You have reached your 100 logins limit. Please renew your subscription for ${PRICE_IQD}.`
               : isRTL
-              ? `انتهت فترة التجربة المجانية (48 ساعة) المخصصة للمرحلة الأولى. للاستمرار في حل جميع بنوك الأسئلة، فعّل كود الـ 13 رقماً (100 تسجيل دخول) أو اطلبه الآن مقابل ${PRICE_IQD}.`
-              : `Your 48-hour free trial for Course 1 has ended. To continue practicing all question banks, activate a 13-figure 100-login code or order via WhatsApp for ${PRICE_IQD}.`}
+              ? `انتهت فترة التجربة المجانية (7 أيام) المخصصة للمرحلة الأولى. للاستمرار في حل جميع بنوك الأسئلة، فعّل كود الـ 13 رقماً (100 تسجيل دخول) أو اطلبه الآن مقابل ${PRICE_IQD}.`
+              : `Your 7-day free trial for Course 1 has ended. To continue practicing all question banks, activate a 13-figure 100-login code or order via WhatsApp for ${PRICE_IQD}.`}
           </p>
         </div>
 

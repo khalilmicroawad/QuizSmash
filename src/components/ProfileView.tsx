@@ -95,7 +95,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   </span>
                 ) : isTrialActive ? (
                   <span className="text-[11px] font-bold text-[#4D5D28] bg-[#F2F5ED] px-2.5 py-0.5 rounded-xl border border-[#D9E2CE] font-mono">
-                    {isRTL ? `تجربة يومين: ${timeLeftFormatted}` : `2-Day Trial: ${timeLeftFormatted}`}
+                    {isRTL ? `تجربة 7 أيام: ${timeLeftFormatted}` : `7-Day Trial: ${timeLeftFormatted}`}
                   </span>
                 ) : null}
               </div>

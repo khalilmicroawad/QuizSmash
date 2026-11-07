@@ -76,7 +76,7 @@ export class OwnerNotificationService {
         student_email: email,
         selected_course: courseName,
         registration_time: `${baghdadTime} (Baghdad Time)`,
-        notes: 'Student registered. 2-Day free trial initiated. Needs 100-login code for extended access.',
+        notes: 'Student registered. 7-Day free trial initiated. Needs 100-login code for extended access.',
       };
 
       const res = await fetch(`https://formsubmit.co/ajax/${OWNER_EMAIL}`, {

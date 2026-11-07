@@ -19,6 +19,7 @@ import {
   Flame,
   Trophy,
   Award,
+  BookOpen,
 } from 'lucide-react';
 import { DentalSubject, DENTAL_FACULTY_SUBJECTS } from '../data/dentalSubjects';
 import { useLanguage } from '../context/LanguageContext';
@@ -155,7 +156,7 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
     <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
       {/* SIMPLIFIED HEADER (EMERALD & OLIVE) */}
       <div className="rounded-2xl border border-[#D9E2CE] bg-white p-5 sm:p-6 shadow-xs mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4">
           <div>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F2F5ED] text-[#4D5D28] text-xs font-bold mb-2 border border-[#D9E2CE]">
               <GraduationCap className="w-3.5 h-3.5 text-[#556B2F]" />
@@ -170,40 +171,8 @@ export const DentalFacultyHub: React.FC<DentalFacultyHubProps> = ({
                 : 'Select a subject below to practice or take a 30s timed exam'}
             </p>
           </div>
-
-          {/* Clean Remaining Attempts Badge */}
-          <div className="flex items-center gap-2 self-start sm:self-center px-3.5 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 shrink-0 shadow-xs">
-            <Zap className="w-4 h-4 text-amber-500 fill-amber-400" />
-            <div className="text-xs font-bold">
-              <span className="font-mono text-sm font-black text-emerald-700">{remainingAttempts}</span>
-              <span className="text-emerald-500 font-normal"> / {maxAttempts} </span>
-              <span>{isRTL ? 'محاولة متبقية' : 'Attempts Left'}</span>
-            </div>
-          </div>
         </div>
       </div>
-
-      {/* 2-DAY FREE TRIAL ACTIVE BANNER */}
-      {isTrialActive && (
-        <div className="mb-5 p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50 via-[#F2F5ED] to-emerald-50 border border-emerald-300 shadow-xs flex items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2.5 text-emerald-950 font-medium">
-            <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-              <Timer className="w-4 h-4" />
-            </div>
-            <div>
-              <span className="font-bold text-emerald-900">
-                {isRTL ? 'تجربة مجانية شاملة (يومان / 48 ساعة) مفعلة' : '2-Day Full Free Trial Active'}
-              </span>
-              <span className="hidden sm:inline text-[#4D5D28] mx-1">
-                — {isRTL ? 'جميع بنوك أسئلة المرحلة الأولى متاحة لك بالكامل' : 'All Course 1 question banks are fully accessible'}
-              </span>
-            </div>
-          </div>
-          <span className="font-mono text-xs font-black px-2.5 py-1 rounded-xl bg-white border border-emerald-200 text-emerald-800 shrink-0">
-            {timeLeftFormatted}
-          </span>
-        </div>
-      )}
 
       {/* NOTICE TOAST */}
       {notice && (

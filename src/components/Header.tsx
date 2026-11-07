@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Play, Zap, Globe, LogOut, GraduationCap, Shield, Timer } from 'lucide-react';
+import { User, Play, Zap, Globe, LogOut, GraduationCap, Shield, Timer, BookOpen } from 'lucide-react';
 import { UserProfile } from '../types/quiz';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -106,35 +106,8 @@ export const Header: React.FC<HeaderProps> = ({
           </nav>
         )}
 
-        {/* Right Action Controls: Language, Service Usage Counter, Status & Sign Out */}
+        {/* Right Action Controls: Owner Portal, Language & Sign Out */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* Service Usage Counter Badge (Olive / Emerald) */}
-          {user && (
-            <div className="flex items-center gap-1.5">
-              <span
-                title={isRTL ? `المحاولات المتبقية: ${remainingAttempts} من ${maxAttempts}` : `Remaining Attempts: ${remainingAttempts} of ${maxAttempts}`}
-                className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 shadow-xs"
-              >
-                <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
-                <span>
-                  {isRTL
-                    ? `${remainingAttempts} محاولة متبقية`
-                    : `${remainingAttempts} Attempts Left`}
-                </span>
-              </span>
-
-              {isTrialActive && (
-                <span
-                  title={isRTL ? `تجربة مجانية شاملة (يومان) - الوقت المتبقي: ${timeLeftFormatted}` : `2-Day Free Trial - Time Left: ${timeLeftFormatted}`}
-                  className="inline-flex items-center gap-1 text-[#3E5022] bg-[#F2F5ED] px-2.5 py-1 rounded-xl border border-[#D9E2CE] font-mono text-[11px] font-bold"
-                >
-                  <Timer className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>{isRTL ? `تجربة: ${timeLeftFormatted}` : `Trial: ${timeLeftFormatted}`}</span>
-                </span>
-              )}
-            </div>
-          )}
-
           {/* Owner Codes Portal (Strictly visible only for dr.khalil.awad@gmail.com) - Icon Only */}
           {user && user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() && (
             <button

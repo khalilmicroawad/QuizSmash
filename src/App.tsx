@@ -17,6 +17,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { InstallModal } from './components/InstallModal';
 import { fetchCnsTestQuestions } from './services/cnsTestService';
 import { CourseSelectionView, CourseStage, DENTAL_COURSES } from './components/CourseSelectionView';
+import { BottomStatusBar } from './components/BottomStatusBar';
 import { Lock, ArrowLeft, ArrowRight } from 'lucide-react';
 
 function QuizSmashApp() {
@@ -240,6 +241,8 @@ function QuizSmashApp() {
         )}
       </main>
 
+      {/* Bottom Status Bar: Attempts, Trial Period & Guest Counter */}
+      <BottomStatusBar />
 
       {/* Install on Phone / APK Modal */}
       <InstallModal
